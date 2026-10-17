@@ -75,10 +75,13 @@ model Profile {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 enum ScheduleFrequency {
   daily
   weekly
 =======
+=======
+>>>>>>> b51af36144e4c92dee573cf8ba6e83d22287669c
 model HealthCondition {
   id     String  @id @default(uuid())
   name   String
@@ -86,7 +89,13 @@ model HealthCondition {
 
   profileId String
   profile   Profile @relation(fields: [profileId], references: [userId], onDelete: Cascade)
+<<<<<<< HEAD
 >>>>>>> origin/onyx-backend
+=======
+enum ScheduleFrequency {
+  daily
+  weekly
+>>>>>>> b51af36144e4c92dee573cf8ba6e83d22287669c
 }
 
 model Schedule {
