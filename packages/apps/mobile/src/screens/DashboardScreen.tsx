@@ -9,6 +9,7 @@ import { colors } from '../theme/colors';
 export function DashboardScreen() {
   const [medications, setMedications] = useState(todaysMedications);
   const takenCount = medications.filter(({ status }) => status === 'taken').length;
+  const completionPercentage = Math.round((takenCount / medications.length) * 100);
 
   const markMedicationTaken = (id: string) => {
     setMedications((current) =>
@@ -23,18 +24,27 @@ export function DashboardScreen() {
       <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
       <View style={styles.progressCard}>
         <View style={styles.progressCopy}>
-          <Text style={styles.progressEyebrow}>YOUR PROGRESS</Text>
+          <View style={styles.progressEyebrowRow}>
+            <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
+            <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
+          </View>
           <Text style={styles.progressTitle}>
             {takenCount === medications.length ? 'All done for today!' : "You're doing great"}
           </Text>
           <Text style={styles.progressSubtitle}>
             {takenCount} of {medications.length} doses logged
           </Text>
+          <View
+            accessibilityLabel={`${completionPercentage}% of today's medications completed`}
+            accessibilityRole="progressbar"
+            style={styles.progressTrack}
+          >
+            <View style={[styles.progressFill, { width: `${completionPercentage}%` }]} />
+          </View>
         </View>
         <View style={styles.progressCircle}>
-          <Text style={styles.progressNumber}>
-            {Math.round((takenCount / medications.length) * 100)}%
-          </Text>
+          <Text style={styles.progressNumber}>{completionPercentage}%</Text>
+          <Text style={styles.progressCircleLabel}>complete</Text>
         </View>
       </View>
       <MedicationList medications={medications} onMarkTaken={markMedicationTaken} />
@@ -54,38 +64,61 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     alignItems: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.primary,
     borderRadius: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 30,
-    padding: 20,
+    overflow: 'hidden',
+    padding: 22,
   },
   progressCopy: {
     flex: 1,
   },
+  progressEyebrowRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   progressEyebrow: {
-    color: colors.primary,
+    color: colors.background,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
+  progressPercentage: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: '800',
+  },
   progressTitle: {
-    color: colors.primary,
+    color: colors.surface,
     fontSize: 19,
     fontWeight: '700',
     marginTop: 7,
   },
   progressSubtitle: {
-    color: colors.text,
+    color: '#DCE5FF',
     fontSize: 13,
     marginTop: 5,
   },
+  progressTrack: {
+    backgroundColor: '#7184B6',
+    borderRadius: 4,
+    height: 7,
+    marginTop: 15,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressFill: {
+    backgroundColor: colors.accent,
+    borderRadius: 4,
+    height: '100%',
+  },
   progressCircle: {
     alignItems: 'center',
-    borderColor: colors.primary,
+    backgroundColor: colors.background,
     borderRadius: 40,
-    borderWidth: 5,
     height: 72,
     justifyContent: 'center',
     marginLeft: 14,
@@ -93,8 +126,15 @@ const styles = StyleSheet.create({
   },
   progressNumber: {
     color: colors.primary,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
+  },
+  progressCircleLabel: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 1,
+    textTransform: 'uppercase',
   },
   note: {
     alignItems: 'center',
