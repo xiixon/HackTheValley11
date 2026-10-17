@@ -19,6 +19,4 @@ export type Ingredient = {
     strength: number; // unit: mg
 }
 
-export type DosageForm = {
-    "tablet" | "capsule" | "powder" | "liquid" | "cream" | "inhaler"
-}
+export type DosageForm = "tablet" | "capsule" | "powder" | "liquid" | "cream" | "inhaler"
