@@ -77,7 +77,8 @@ model Profile {
 enum ScheduleFrequency {
   daily
   weekly
-  
+}
+
 model HealthCondition {
   id     String  @id @default(uuid())
   name   String
@@ -85,6 +86,7 @@ model HealthCondition {
 
   profileId String
   profile   Profile @relation(fields: [profileId], references: [userId], onDelete: Cascade)
+}
 
 model Schedule {
   id           String     @id @default(uuid())
