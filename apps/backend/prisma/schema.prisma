@@ -53,9 +53,16 @@ enum Priority {
 }
 
 model User {
-  id       String    @id @default(uuid())
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
   profile  Profile?                  // one-to-one
   schedules Schedule[]               // one user has many schedules
+  pushTokens Pushtoken[]
 }
 
 model Profile {
@@ -63,7 +70,20 @@ model Profile {
   user     User     @relation(fields: [userId], references: [id])
   weightKg Float
   heightCm Float
+  healthConditions HealthCondition[]
   allergies String[]
+}
+
+model HealthCondition {
+  id     String  @id @default(uuid())
+  name   String
+  notes  String?
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [userId], onDelete: Cascade)
+enum ScheduleFrequency {
+  daily
+  weekly
 }
 
 model Schedule {
@@ -76,4 +96,27 @@ model Schedule {
   startDate    String
   endDate      String?
   isActive     Boolean    @default(true)
+  frequency     ScheduleFrequency @default(daily)
+  daysOfWeek     String[]
+  timezone     String
+  reminderLogs     ReminderLog[]
+}
+
+model PushToken {
+  id     String     @id @default(vvid())
+  userId     String
+  user     User     @relation(fields: [userId], references: [id])
+  token     String     @unique
+  createdAt     DateTime     @default(now())
+}
+
+model ReminderLog {
+  id     String     @id @default(vvid())
+  scheduleId     String
+  schedule     Schedule @relation(fields: [scheduleId], references: [id])
+  localDate     String
+  time     String
+  sentAt     DateTime @default(now())
+
+  @@unique([scheduleId, localDate, time])
 }
