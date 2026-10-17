@@ -8,12 +8,15 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 
-import { Medication } from "../../types/medication";
+import { Medication, MedicationFormValues } from "../../types/medication";
 import { colors } from "../../theme/colors";
+import { AddMedicationModal } from "../medications/AddMedicationModal";
+import { MedicationDetailsModal } from "../medications/MedicationDetailsModal";
 
 type ScheduleProps = {
   medicationsByDate: Record<string, Medication[]>;
   onToggleMedication: (id: string) => void;
+  onAddMedication: (date: Date, medication: MedicationFormValues) => void;
 };
 
 function getDateKey(date: Date) {
@@ -27,10 +30,13 @@ function getDateKey(date: Date) {
 export function Schedule({
   medicationsByDate,
   onToggleMedication,
+  onAddMedication,
 }: ScheduleProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [isAddMedicationVisible, setIsAddMedicationVisible] = useState(false);
+  const [detailsMedication, setDetailsMedication] = useState<Medication | null>(null);
 
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -145,22 +151,35 @@ export function Schedule({
           <Text style={styles.sectionTitle}>Scheduled doses</Text>
           <Text style={styles.sectionSubtitle}>{selectedDateLabel}</Text>
         </View>
-        <Pressable
-          accessibilityLabel="Open date picker"
-          accessibilityRole="button"
-          onPress={() => {
-            setCalendarMonth(
-              new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-            );
-            setIsCalendarVisible(true);
-          }}
-          style={({ pressed }) => [
-            styles.calendarButton,
-            pressed && styles.calendarButtonPressed,
-          ]}
-        >
-          <Text style={styles.calendarLabel}>Change day</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityLabel={`Add medication for ${selectedDateLabel}`}
+            accessibilityRole="button"
+            onPress={() => setIsAddMedicationVisible(true)}
+            style={({ pressed }) => [
+              styles.addHeaderButton,
+              pressed && styles.calendarButtonPressed,
+            ]}
+          >
+            <Text style={styles.addHeaderButtonText}>+ Add</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Open date picker"
+            accessibilityRole="button"
+            onPress={() => {
+              setCalendarMonth(
+                new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+              );
+              setIsCalendarVisible(true);
+            }}
+            style={({ pressed }) => [
+              styles.calendarButton,
+              pressed && styles.calendarButtonPressed,
+            ]}
+          >
+            <Text style={styles.calendarLabel}>Change day</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.doseList}>
@@ -190,12 +209,12 @@ export function Schedule({
                   ]}
                 />
                 <View style={styles.medicationCopy}>
-                  <Text style={styles.medicationName}>{medication.name}</Text>
+                  <Text style={styles.medicationName}>{medication.genericName}</Text>
                   <Text style={styles.dosage}>{medication.dosage}</Text>
                 </View>
               </View>
               <Pressable
-                accessibilityLabel={`${isTaken ? "Undo taken status for" : "Mark"} ${medication.name}`}
+                accessibilityLabel={`${isTaken ? "Undo taken status for" : "Mark"} ${medication.genericName}`}
                 accessibilityRole="button"
                 accessibilityState={{ checked: isTaken }}
                 onPress={() => onToggleMedication(medication.id)}
@@ -213,6 +232,14 @@ export function Schedule({
                   {isTaken ? "Taken" : "Upcoming"}
                 </Text>
               </Pressable>
+              <Pressable
+                accessibilityLabel={`View details for ${medication.genericName}`}
+                accessibilityRole="button"
+                onPress={() => setDetailsMedication(medication)}
+                style={styles.detailsButton}
+              >
+                <Text style={styles.detailsButtonText}>Details</Text>
+              </Pressable>
             </View>
           );
         })}
@@ -224,7 +251,15 @@ export function Schedule({
             <Text style={styles.emptyStateText}>
               No medications have been added for this day yet.
             </Text>
-            {/* TODO: Add an action to create a medication schedule for this date. */}
+            <Pressable
+              accessibilityLabel={`Add medication for ${selectedDateLabel}`}
+              accessibilityRole="button"
+              onPress={() => setIsAddMedicationVisible(true)}
+              style={({ pressed }) => [styles.addButton, pressed && styles.statusPressed]}
+            >
+              <Text style={styles.addButtonText}>Add medication</Text>
+              <Text style={styles.addButtonIcon}>+</Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -345,6 +380,16 @@ export function Schedule({
           </View>
         </View>
       </Modal>
+      <AddMedicationModal
+        date={selectedDate}
+        onClose={() => setIsAddMedicationVisible(false)}
+        onSubmit={(medication) => onAddMedication(selectedDate, medication)}
+        visible={isAddMedicationVisible}
+      />
+      <MedicationDetailsModal
+        medication={detailsMedication}
+        onClose={() => setDetailsMedication(null)}
+      />
     </ScrollView>
   );
 }
@@ -462,6 +507,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 18,
     paddingHorizontal: 4,
+  },
+  headerActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginLeft: 8,
+  },
+  addHeaderButton: {
+    alignItems: "center",
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    justifyContent: "center",
+    minHeight: 46,
+    paddingHorizontal: 11,
+  },
+  addHeaderButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
   },
   sectionTitle: {
     color: colors.text,
@@ -689,6 +752,27 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: "center",
   },
+  addButton: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 18,
+    minHeight: 48,
+    paddingHorizontal: 20,
+    width: "100%",
+  },
+  addButtonText: {
+    color: colors.background,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  addButtonIcon: {
+    color: colors.accent,
+    fontSize: 21,
+    marginLeft: 8,
+  },
   timeColumn: {
     alignItems: "flex-end",
     justifyContent: "center",
@@ -760,6 +844,16 @@ const styles = StyleSheet.create({
   },
   statusPressed: {
     opacity: 0.72,
+  },
+  detailsButton: {
+    alignSelf: "center",
+    marginLeft: 8,
+    paddingVertical: 8,
+  },
+  detailsButtonText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: "800",
   },
   statusTaken: {
     backgroundColor: colors.successSurface,
