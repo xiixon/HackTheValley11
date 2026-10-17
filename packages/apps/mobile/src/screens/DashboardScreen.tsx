@@ -33,10 +33,7 @@ export function DashboardScreen() {
       <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
       <View style={styles.progressCard}>
         <View style={styles.progressCopy}>
-          <View style={styles.progressEyebrowRow}>
-            <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
-            <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
-          </View>
+          <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
           <Text style={styles.progressTitle}>
             {takenCount === medications.length ? 'All done for today!' : "You're doing great"}
           </Text>
@@ -84,21 +81,11 @@ const styles = StyleSheet.create({
   progressCopy: {
     flex: 1,
   },
-  progressEyebrowRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   progressEyebrow: {
     color: colors.background,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
-  },
-  progressPercentage: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: '800',
   },
   progressTitle: {
     color: colors.surface,
