@@ -56,6 +56,7 @@ model User {
   id       String    @id @default(uuid())
   profile  Profile?                  // one-to-one
   schedules Schedule[]               // one user has many schedules
+  pushTokens Pushtoken[]
 }
 
 model Profile {
@@ -64,6 +65,11 @@ model Profile {
   weightKg Float
   heightCm Float
   allergies String[]
+}
+
+enum ScheduleFrequency {
+  daily
+  weekly
 }
 
 model Schedule {
@@ -76,4 +82,27 @@ model Schedule {
   startDate    String
   endDate      String?
   isActive     Boolean    @default(true)
+  frequency     ScheduleFrequency @default(daily)
+  daysOfWeek     String[]
+  timezone     String
+  reminderLogs     ReminderLog[]
+}
+
+model PushToken {
+  id     String     @id @default(vvid())
+  userId     String
+  user     User     @relation(fields: [userId], references: [id])
+  token     String     @unique
+  createdAt     DateTime     @default(now())
+}
+
+model ReminderLog {
+  id     String     @id @default(vvid())
+  scheduleId     String
+  schedule     Schedule @relation(fields: [scheduleId], references: [id])
+  localDate     String
+  time     String
+  sentAt     DateTime @default(now())
+
+  @@unique([scheduleId, localDate, time])
 }
