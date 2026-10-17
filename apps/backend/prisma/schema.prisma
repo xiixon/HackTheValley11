@@ -62,7 +62,7 @@ model User {
   createdAt    DateTime @default(now())
   profile  Profile?                  // one-to-one
   schedules Schedule[]               // one user has many schedules
-  pushTokens Pushtoken[]
+  pushTokens PushToken[]
 }
 
 model Profile {
