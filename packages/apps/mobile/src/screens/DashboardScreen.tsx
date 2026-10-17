@@ -11,15 +11,23 @@ export function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const [medications, setMedications] = useState(todaysMedications);
   const takenCount = medications.filter(({ status }) => status === 'taken').length;
-  const completionPercentage = Math.round((takenCount / medications.length) * 100);
+  const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
-  const markMedicationTaken = (id: string) => {
-    setMedications((current) =>
-      current.map((medication) =>
-        medication.id === id ? { ...medication, status: 'taken' } : medication,
-      ),
-    );
-  };
+  const toggleMedicationTaken = (id: string) => {
+  setMedications((current) =>
+    current.map((medication) =>
+      medication.id === id
+        ? {
+            ...medication,
+            status:
+              medication.status === 'taken'
+                ? 'upcoming'
+                : 'taken',
+          }
+        : medication,
+    ),
+  );
+};
 
   return (
     <ScrollView
@@ -33,10 +41,7 @@ export function DashboardScreen() {
       <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
       <View style={styles.progressCard}>
         <View style={styles.progressCopy}>
-          <View style={styles.progressEyebrowRow}>
-            <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
-            <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
-          </View>
+          <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
           <Text style={styles.progressTitle}>
             {takenCount === medications.length ? 'All done for today!' : "You're doing great"}
           </Text>
@@ -56,7 +61,7 @@ export function DashboardScreen() {
           <Text style={styles.progressCircleLabel}>complete</Text>
         </View>
       </View>
-      <MedicationList medications={medications} onMarkTaken={markMedicationTaken} />
+      <MedicationList medications={medications} onMarkTaken={toggleMedicationTaken} />
       <View style={styles.note}>
         <Text style={styles.noteIcon}>✦</Text>
         <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
@@ -84,21 +89,11 @@ const styles = StyleSheet.create({
   progressCopy: {
     flex: 1,
   },
-  progressEyebrowRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   progressEyebrow: {
     color: colors.background,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
-  },
-  progressPercentage: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: '800',
   },
   progressTitle: {
     color: colors.surface,
