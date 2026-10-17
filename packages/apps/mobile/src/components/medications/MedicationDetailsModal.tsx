@@ -65,6 +65,11 @@ export function MedicationDetailsModal({
           values={medication.avoidWithIngredients}
           emptyLabel="No interactions recorded."
         />
+        <Section
+          title="Instructions and notes"
+          values={medication.notes ? [medication.notes] : []}
+          emptyLabel="No additional instructions."
+        />
         <View style={styles.editArea}>
           <Text style={styles.editPrompt}>Need to correct a detail?</Text>
           <Pressable

@@ -22,6 +22,32 @@ function getTodayKey() {
   return `${today.getFullYear()}-${month}-${day}`;
 }
 
+function getDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getDatesForFrequency(
+  startDate: string,
+  endDate: string,
+  frequency: string,
+  fallbackDate: Date,
+) {
+  const start = startDate ? new Date(`${startDate}T12:00:00`) : fallbackDate;
+  const end = endDate ? new Date(`${endDate}T12:00:00`) : start;
+  const dates: Date[] = [];
+  const current = new Date(start);
+
+  while (current <= end && dates.length < 366) {
+    dates.push(new Date(current));
+    if (frequency === "Daily") current.setDate(current.getDate() + 1);
+    else if (frequency === "Weekly") current.setDate(current.getDate() + 7);
+    else if (frequency === "Monthly") current.setMonth(current.getMonth() + 1);
+    else break;
+  }
+
+  return dates;
+}
+
 export function MedicationProvider({ children }: { children: ReactNode }) {
   const [medicationsByDate, setMedicationsByDate] = useState<
     Record<string, Medication[]>
@@ -54,18 +80,27 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
   };
 
   const addMedication = (date: Date, medication: MedicationFormValues) => {
-    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    const scheduledMedication: Medication = {
-      ...medication,
-      scheduledDate: dateKey,
-      status: "upcoming",
-      dosage: `${medication.doseAmount} ${medication.dosageForm}`,
-    };
-
-    setMedicationsByDate((current) => ({
-      ...current,
-      [dateKey]: [...(current[dateKey] ?? []), scheduledMedication],
-    }));
+    const dates = getDatesForFrequency(
+      medication.startDate,
+      medication.endDate,
+      medication.Frequency,
+      date,
+    );
+    setMedicationsByDate((current) => {
+      const next = { ...current };
+      dates.forEach((scheduledDate) => {
+        const dateKey = getDateKey(scheduledDate);
+        const scheduledMedication: Medication = {
+          ...medication,
+          id: dates.length > 1 ? `${medication.id}-${dateKey}` : medication.id,
+          scheduledDate: dateKey,
+          status: "upcoming",
+          dosage: `${medication.doseAmount} ${medication.dosageForm}`,
+        };
+        next[dateKey] = [...(next[dateKey] ?? []), scheduledMedication];
+      });
+      return next;
+    });
   };
 
   const updateMedication = (id: string, medication: MedicationFormValues) => {

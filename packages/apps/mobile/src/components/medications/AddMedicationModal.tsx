@@ -30,14 +30,19 @@ const initialValues: MedicationFormValues = {
   ingredients: [],
   purposes: [],
   dosageForm: "tablet",
-  Frequency: "Once daily",
+  Frequency: "Once",
   doseAmount: 1,
   warning: [],
   avoidWithConditions: [],
   avoidWithIngredients: [],
   time: "8:00 AM",
   color: colors.secondary,
+  startDate: "",
+  endDate: "",
+  notes: "",
 };
+
+const frequencyOptions = ["Once", "Daily", "Weekly", "Monthly", "As needed", "Once daily"];
 
 export function AddMedicationModal({
   date,
@@ -55,6 +60,7 @@ export function AddMedicationModal({
   const [ingredientStrength, setIngredientStrength] = useState(
     String(medication?.ingredients[0]?.strength ?? 0),
   );
+  const [isFrequencyOpen, setIsFrequencyOpen] = useState(false);
 
   const resetForm = () => {
     if (medication) {
@@ -75,7 +81,16 @@ export function AddMedicationModal({
     value: MedicationFormValues[K],
   ) => setValues((current) => ({ ...current, [key]: value }));
 
-  const canSubmit = values.id.trim() && values.genericName.trim() && values.time.trim();
+  const isRecurring = ["Daily", "Weekly", "Monthly"].includes(values.Frequency);
+  const startDateValid = /^\d{4}-\d{2}-\d{2}$/.test(values.startDate);
+  const endDateValid =
+    !isRecurring ||
+    (/^\d{4}-\d{2}-\d{2}$/.test(values.endDate) &&
+      values.endDate >= values.startDate);
+  const canSubmit =
+  Boolean(values.id.trim() && values.genericName.trim() && values.time.trim()) &&
+  startDateValid &&
+  endDateValid;
 
   const submit = () => {
     if (!canSubmit) return;
@@ -88,6 +103,9 @@ export function AddMedicationModal({
         ? [{ name: ingredientName.trim(), strength: Number(ingredientStrength) || 0 }]
         : [],
       purposes: values.purposes,
+      startDate: values.startDate.trim(),
+      endDate: isRecurring ? values.endDate.trim() : "",
+      notes: values.notes.trim(),
     });
     resetForm();
     onClose();
@@ -114,9 +132,34 @@ export function AddMedicationModal({
               <View style={styles.half}><Field label="Dose amount" keyboardType="numeric" value={String(values.doseAmount)} onChangeText={(value) => update("doseAmount", Number(value) || 0)} /></View>
               <View style={styles.half}><Field label="Dosage form" value={values.dosageForm} onChangeText={(value) => update("dosageForm", value as MedicationFormValues["dosageForm"])} /></View>
             </View>
+            {!startDateValid && values.startDate.length > 0 && (
+              <Text style={styles.validationText}>Use a date in YYYY-MM-DD format.</Text>
+            )}
+            {isRecurring && !endDateValid && values.endDate.length > 0 && (
+              <Text style={styles.validationText}>End date must be on or after the start date.</Text>
+            )}
             <View style={styles.row}>
-              <View style={styles.half}><Field label="Frequency" value={values.Frequency} onChangeText={(value) => update("Frequency", value)} /></View>
+              <View style={styles.half}>
+                <Text style={styles.fieldLabel}>Frequency</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel="Choose medication frequency" onPress={() => setIsFrequencyOpen((open) => !open)} style={styles.select}>
+                  <Text style={styles.selectText}>{values.Frequency}</Text>
+                  <Text style={styles.selectChevron}>{isFrequencyOpen ? "▲" : "▼"}</Text>
+                </Pressable>
+                {isFrequencyOpen && (
+                  <View style={styles.options}>
+                    {frequencyOptions.map((option) => (
+                      <Pressable key={option} onPress={() => { update("Frequency", option); setIsFrequencyOpen(false); }} style={styles.option}>
+                        <Text style={styles.optionText}>{option}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
               <View style={styles.half}><Field label="Scheduled time" value={values.time} onChangeText={(value) => update("time", value)} /></View>
+            </View>
+            <View style={styles.row}>
+              <View style={styles.half}><Field label="Start date (YYYY-MM-DD)" value={values.startDate} onChangeText={(value) => update("startDate", value)} placeholder={date.toISOString().slice(0, 10)} /></View>
+              {isRecurring && <View style={styles.half}><Field label="End date (YYYY-MM-DD)" value={values.endDate} onChangeText={(value) => update("endDate", value)} placeholder="Required" /></View>}
             </View>
             <Text style={styles.groupLabel}>Ingredient (optional)</Text>
             <View style={styles.row}>
@@ -124,6 +167,7 @@ export function AddMedicationModal({
               <View style={styles.half}><Field label="Strength (mg)" keyboardType="numeric" value={ingredientStrength} onChangeText={setIngredientStrength} /></View>
             </View>
             <Field label="Purpose (optional)" value={values.purposes[0] ?? ""} onChangeText={(value) => update("purposes", value ? [value] : [])} placeholder="What is it for?" />
+            <Field label="Instructions or notes (optional)" value={values.notes} onChangeText={(value) => update("notes", value)} placeholder="e.g. Take with food" multiline />
             <Pressable accessibilityLabel="Save medication" accessibilityRole="button" disabled={!canSubmit} onPress={submit} style={[styles.saveButton, !canSubmit && styles.saveButtonDisabled]}>
               <Text style={styles.saveButtonText}>{medication ? "Save changes" : "Add medication"}</Text>
             </Pressable>
@@ -149,6 +193,9 @@ function getFormValues(medication: Medication): MedicationFormValues {
     avoidWithIngredients: medication.avoidWithIngredients,
     time: medication.time,
     color: medication.color,
+    startDate: medication.startDate ?? medication.scheduledDate ?? "",
+    endDate: medication.endDate ?? "",
+    notes: medication.notes ?? "",
   };
 }
 
@@ -176,6 +223,13 @@ const styles = StyleSheet.create({
   input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: 12 },
   row: { flexDirection: "row", gap: 10 },
   half: { flex: 1 },
+  select: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 46, paddingHorizontal: 12 },
+  selectText: { color: colors.text, fontSize: 13 },
+  selectChevron: { color: colors.primary, fontSize: 10, fontWeight: "800" },
+  options: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, marginTop: 4, overflow: "hidden" },
+  option: { borderBottomColor: colors.border, borderBottomWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  optionText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+  validationText: { color: colors.primary, fontSize: 11, marginBottom: 8 },
   groupLabel: { color: colors.text, fontSize: 12, fontWeight: "800", marginBottom: 8 },
   saveButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 14, minHeight: 50, justifyContent: "center", marginTop: 8 },
   saveButtonDisabled: { opacity: 0.45 },

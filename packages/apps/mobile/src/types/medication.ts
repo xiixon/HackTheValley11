@@ -12,6 +12,9 @@ export type Medication = SharedMedication & {
   scheduledDate?: string;
   status: MedicationStatus;
   color: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
 };
 
 export type MedicationDisplayStatus = MedicationStatus | 'missed';
@@ -58,6 +61,9 @@ export type MedicationFormValues = Pick<
 > & {
   time: string;
   color: string;
+  startDate: string;
+  endDate: string;
+  notes: string;
 };
 
 export type { DosageForm, Ingredient };
