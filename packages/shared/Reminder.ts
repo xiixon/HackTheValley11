@@ -1,12 +1,6 @@
-type Priority = "low" | "medium" | "high";
-type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
-type ReminderStatus = 'pending' | 'completed' | 'snoozed' | 'cancelled';
+import { Schedule } from "./Schedule";
 
-type Recurrence = {
-    frequency: RecurrenceFrequency;
-    interval? : number;
-    endDate?: Date;
-}
+type Priority = "low" | "medium" | "high";
 
 export type Reminder = {
     id: string;
@@ -15,7 +9,5 @@ export type Reminder = {
 
     priority: Priority;
     createdAt: Date;
-    
-    status: ReminderStatus;
-    recurrence?: Recurrence;
+    schedule: Schedule;
 }
