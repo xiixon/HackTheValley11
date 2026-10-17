@@ -103,7 +103,7 @@ model Schedule {
 }
 
 model PushToken {
-  id     String     @id @default(vvid())
+  id     String     @id @default(uuid())
   userId     String
   user     User     @relation(fields: [userId], references: [id])
   token     String     @unique
@@ -111,7 +111,7 @@ model PushToken {
 }
 
 model ReminderLog {
-  id     String     @id @default(vvid())
+  id     String     @id @default(uuid())
   scheduleId     String
   schedule     Schedule @relation(fields: [scheduleId], references: [id])
   localDate     String
