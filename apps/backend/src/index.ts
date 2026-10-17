@@ -1,13 +1,26 @@
 import express from "express";
-import authRoutes from "../routes/auth"
-import schedulesRouter from "../routes/schedules"
-import { requireAuth } from "../middleware/auth.js"
+import authRoutes from "../routes/auth";
+import schedulesRouter from "../routes/schedules";
+import { requireAuth } from "../middleware/auth.js";
 
 const app = express();
+
+app.use((req, res, next) => {
+  if (req.headers.origin === (process.env.APP_ORIGIN ?? "http://localhost:8081")) {
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+    res.vary("Origin");
+  }
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
 app.use(express.json());
 app.use("/auth", authRoutes);
-app.use("/schedules", schedulesRouter);
-app.use("/schedules", requireAuth, schedulesRouter)
+app.use("/schedules", requireAuth, schedulesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
