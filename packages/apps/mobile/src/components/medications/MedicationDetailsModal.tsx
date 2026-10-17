@@ -32,6 +32,11 @@ export function MedicationDetailsModal({
           <Detail label="Frequency" value={medication.Frequency} />
           <Detail label="Time" value={medication.time} />
         </View>
+        {medication.scheduledDate && (
+          <Text style={styles.scheduledDate}>
+            Scheduled for {medication.scheduledDate}
+          </Text>
+        )}
         <Section title="Purpose" values={medication.purposes} />
         <Section
           title="Ingredients"
@@ -89,6 +94,7 @@ const styles = StyleSheet.create({
   closeButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   closeText: { color: colors.primary, fontSize: 25, lineHeight: 28 },
   summary: { backgroundColor: colors.primary, borderRadius: 20, flexDirection: "row", justifyContent: "space-between", marginTop: 28, padding: 18 },
+  scheduledDate: { color: colors.textMuted, fontSize: 13, marginTop: 10 },
   detail: { flex: 1 },
   detailLabel: { color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
   detailValue: { color: colors.background, fontSize: 14, fontWeight: "700", marginTop: 6 },

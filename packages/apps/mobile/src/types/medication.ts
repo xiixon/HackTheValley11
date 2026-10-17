@@ -9,6 +9,7 @@ export type MedicationStatus = 'upcoming' | 'taken';
 export type Medication = SharedMedication & {
   dosage: string;
   time: string;
+  scheduledDate?: string;
   status: MedicationStatus;
   color: string;
 };

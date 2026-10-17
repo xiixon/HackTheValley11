@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
-import { todaysMedications } from "../data/medications";
+import { medicationsByDate as initialMedicationsByDate } from "../data/medications";
 import { Medication, MedicationFormValues } from "../types/medication";
 
 type MedicationContextValue = {
@@ -24,9 +24,10 @@ function getTodayKey() {
 export function MedicationProvider({ children }: { children: ReactNode }) {
   const [medicationsByDate, setMedicationsByDate] = useState<
     Record<string, Medication[]>
-  >({
-    [getTodayKey()]: todaysMedications,
-  });
+  >(() => ({
+    ...initialMedicationsByDate,
+    [getTodayKey()]: initialMedicationsByDate[getTodayKey()] ?? [],
+  }));
 
   const toggleMedicationTaken = (id: string) => {
     setMedicationsByDate((current) => {

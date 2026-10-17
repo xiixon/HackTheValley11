@@ -38,7 +38,7 @@ const onceDaily = ['Once daily'];
  * This is a product-safety validation layer, not a substitute for a clinician
  * or pharmacist. Dosage rules are intentionally conservative catalog bounds.
  */
-export const medicationCatalog: MedicationCatalogEntry[] = [
+const medicationCatalogEntries: MedicationCatalogEntry[] = [
   {
     id: 'vitamin-d',
     name: 'Vitamin D3',
@@ -425,6 +425,21 @@ export const medicationCatalog: MedicationCatalogEntry[] = [
   },
 ];
 
+function getDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+export const medicationCatalog: MedicationCatalogEntry[] =
+  medicationCatalogEntries.map((medication, index) => {
+    const scheduledDate = new Date();
+    scheduledDate.setDate(scheduledDate.getDate() + Math.floor(index / 3));
+
+    return {
+      ...medication,
+      scheduledDate: getDateKey(scheduledDate),
+    };
+  });
+
 const interactionRules: {
   groups: [string, string];
   message: string;
@@ -532,7 +547,17 @@ export const medicationValidationResults = medicationCatalog.map((medication) =>
   result: validateMedication(medication),
 }));
 
-export const todaysMedications: Medication[] = medicationCatalog.slice(0, 3);
+export const medicationsByDate: Record<string, Medication[]> =
+  medicationCatalog.reduce<Record<string, Medication[]>>((grouped, medication) => {
+    const dateKey = medication.scheduledDate;
+    if (!dateKey) return grouped;
+
+    grouped[dateKey] = [...(grouped[dateKey] ?? []), medication];
+    return grouped;
+  }, {});
+
+export const todaysMedications: Medication[] =
+  medicationsByDate[getDateKey(new Date())] ?? [];
 
 export const commonMedicationCatalog = medicationCatalog.filter(
   (medication) => medication.status === 'upcoming',
