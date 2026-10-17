@@ -7,7 +7,7 @@ export const todaysMedications: Medication[] = [
     dosage: '1000 IU · 1 capsule',
     time: '8:00 AM',
     status: 'taken',
-    color: '#E5B96B',
+    color: '#FF95A5',
   },
   {
     id: 'lisinopril',
@@ -15,7 +15,7 @@ export const todaysMedications: Medication[] = [
     dosage: '10 mg · 1 tablet',
     time: '12:30 PM',
     status: 'upcoming',
-    color: '#93B9A6',
+    color: '#76C0EC',
   },
   {
     id: 'magnesium',
@@ -23,6 +23,6 @@ export const todaysMedications: Medication[] = [
     dosage: '200 mg · 1 capsule',
     time: '8:00 PM',
     status: 'upcoming',
-    color: '#B2A1C7',
+    color: '#425B9A',
   },
 ];

@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { todaysMedications } from '../data/medications';
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
 import { MedicationList } from '../components/dashboard/MedicationList';
+import { colors } from '../theme/colors';
 
 export function DashboardScreen() {
   const [medications, setMedications] = useState(todaysMedications);
@@ -19,7 +20,7 @@ export function DashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <GreetingHeader name="Alexander" />
+      <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
       <View style={styles.progressCard}>
         <View style={styles.progressCopy}>
           <Text style={styles.progressEyebrow}>YOUR PROGRESS</Text>
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     alignItems: 'center',
-    backgroundColor: '#DCEEE4',
+    backgroundColor: colors.secondary,
     borderRadius: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -64,25 +65,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   progressEyebrow: {
-    color: '#4C7B68',
+    color: colors.primary,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
   progressTitle: {
-    color: '#173B35',
+    color: colors.primary,
     fontSize: 19,
     fontWeight: '700',
     marginTop: 7,
   },
   progressSubtitle: {
-    color: '#55786A',
+    color: colors.text,
     fontSize: 13,
     marginTop: 5,
   },
   progressCircle: {
     alignItems: 'center',
-    borderColor: '#65A17F',
+    borderColor: colors.primary,
     borderRadius: 40,
     borderWidth: 5,
     height: 72,
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     width: 72,
   },
   progressNumber: {
-    color: '#2D8060',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '800',
   },
@@ -102,12 +103,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   noteIcon: {
-    color: '#D4A958',
+    color: colors.accent,
     fontSize: 15,
     marginRight: 7,
   },
   noteText: {
-    color: '#89958F',
+    color: colors.textMuted,
     fontSize: 13,
   },
 });

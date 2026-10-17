@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Medication } from '../../types/medication';
+import { colors } from '../../theme/colors';
 
 type MedicationCardProps = {
   medication: Medication;
@@ -42,8 +43,8 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
 const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E9EAE3',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     flexDirection: 'row',
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
     width: 52,
   },
   iconText: {
-    color: '#FFFFFF',
+    color: colors.primary,
     fontSize: 25,
     fontWeight: '700',
   },
@@ -68,48 +69,50 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   name: {
-    color: '#173B35',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '700',
   },
   dosage: {
-    color: '#718079',
+    color: colors.textMuted,
     fontSize: 13,
     marginTop: 4,
   },
   time: {
-    color: '#395A50',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '600',
     marginTop: 8,
   },
   takenBadge: {
     alignItems: 'center',
-    backgroundColor: '#EAF4EE',
+    backgroundColor: colors.successSurface,
     borderRadius: 12,
     flexDirection: 'row',
     paddingHorizontal: 9,
     paddingVertical: 7,
   },
   takenCheck: {
-    color: '#39805E',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '700',
     marginRight: 4,
   },
   takenText: {
-    color: '#39805E',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '700',
   },
   takeButton: {
-    backgroundColor: '#173B35',
+    backgroundColor: colors.primary,
     borderRadius: 12,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
   takeButtonText: {
-    color: '#FFFFFF',
+    color: colors.background,
     fontSize: 11,
     fontWeight: '700',
   },

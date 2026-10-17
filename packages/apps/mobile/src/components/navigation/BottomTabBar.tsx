@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { colors } from '../../theme/colors';
+
 export type TabName = 'Today' | 'Schedule' | 'Meds' | 'History' | 'Profile';
 
 const tabs: { name: TabName; icon: string }[] = [
@@ -40,8 +42,8 @@ export function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProps) {
 
 const styles = StyleSheet.create({
   bar: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E9EAE3',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -50,25 +52,26 @@ const styles = StyleSheet.create({
   },
   tab: {
     alignItems: 'center',
+    minHeight: 44,
     minWidth: 58,
     paddingHorizontal: 4,
   },
   icon: {
-    color: '#9AA6A0',
+    color: colors.textMuted,
     fontSize: 22,
     height: 25,
   },
   activeIcon: {
-    color: '#2D8060',
+    color: colors.primary,
   },
   label: {
-    color: '#9AA6A0',
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: '600',
     marginTop: 4,
   },
   activeLabel: {
-    color: '#2D8060',
+    color: colors.primary,
   },
   pressed: {
     opacity: 0.6,

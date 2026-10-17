@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { MedicationCard } from './MedicationCard';
 import { Medication } from '../../types/medication';
+import { colors } from '../../theme/colors';
 
 type MedicationListProps = {
   medications: Medication[];
@@ -30,12 +31,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   heading: {
-    color: '#173B35',
+    color: colors.primary,
     fontSize: 20,
     fontWeight: '700',
   },
   count: {
-    color: '#80908A',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
   },
