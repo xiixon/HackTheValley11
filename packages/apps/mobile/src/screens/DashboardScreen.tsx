@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { todaysMedications } from '../data/medications';
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
@@ -7,6 +8,7 @@ import { MedicationList } from '../components/dashboard/MedicationList';
 import { colors } from '../theme/colors';
 
 export function DashboardScreen() {
+  const insets = useSafeAreaInsets();
   const [medications, setMedications] = useState(todaysMedications);
   const takenCount = medications.filter(({ status }) => status === 'taken').length;
   const completionPercentage = Math.round((takenCount / medications.length) * 100);
@@ -20,7 +22,14 @@ export function DashboardScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.content,
+        Platform.OS === 'android' && { paddingTop: styles.content.paddingTop + insets.top },
+      ]}
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+    >
       <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
       <View style={styles.progressCard}>
         <View style={styles.progressCopy}>
