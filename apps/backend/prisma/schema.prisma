@@ -98,7 +98,7 @@ model Schedule {
   isActive     Boolean    @default(true)
   frequency     ScheduleFrequency @default(daily)
   daysOfWeek     String[]
-  timezone     String
+  timezone     String     @default("UTC")
   reminderLogs     ReminderLog[]
 }
 
