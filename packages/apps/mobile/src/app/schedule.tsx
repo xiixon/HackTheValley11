@@ -1,13 +1,13 @@
-import { todaysMedications } from '../data/medications';
 import { Schedule } from '../components/dashboard/Schedule';
+import { useMedications } from '../context/MedicationContext';
 
 export default function ScheduleScreen() {
-  const today = new Date();
-  const todayKey = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
+  const { medicationsByDate, toggleMedicationTaken } = useMedications();
 
-  return <Schedule medicationsByDate={{ [todayKey]: todaysMedications }} />;
+  return (
+    <Schedule
+      medicationsByDate={medicationsByDate}
+      onToggleMedication={toggleMedicationTaken}
+    />
+  );
 }

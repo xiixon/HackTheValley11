@@ -13,6 +13,7 @@ import { colors } from "../../theme/colors";
 
 type ScheduleProps = {
   medicationsByDate: Record<string, Medication[]>;
+  onToggleMedication: (id: string) => void;
 };
 
 function getDateKey(date: Date) {
@@ -23,7 +24,10 @@ function getDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-export function Schedule({ medicationsByDate }: ScheduleProps) {
+export function Schedule({
+  medicationsByDate,
+  onToggleMedication,
+}: ScheduleProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
@@ -159,7 +163,6 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
         </Pressable>
       </View>
 
-      {/* TODO: Add dose actions here when schedule editing and completion logic are ready. */}
       <View style={styles.doseList}>
         {selectedMedications.map((medication) => {
           const isTaken = medication.status === "taken";
@@ -191,10 +194,15 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
                   <Text style={styles.dosage}>{medication.dosage}</Text>
                 </View>
               </View>
-              <View
-                style={[
+              <Pressable
+                accessibilityLabel={`${isTaken ? "Undo taken status for" : "Mark"} ${medication.name}`}
+                accessibilityRole="button"
+                accessibilityState={{ checked: isTaken }}
+                onPress={() => onToggleMedication(medication.id)}
+                style={({ pressed }) => [
                   styles.status,
                   isTaken ? styles.statusTaken : styles.statusUpcoming,
+                  pressed && styles.statusPressed,
                 ]}
               >
                 <Text
@@ -204,7 +212,7 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
                 >
                   {isTaken ? "Taken" : "Upcoming"}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           );
         })}
@@ -749,6 +757,9 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  statusPressed: {
+    opacity: 0.72,
   },
   statusTaken: {
     backgroundColor: colors.successSurface,
