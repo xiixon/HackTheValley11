@@ -77,8 +77,8 @@ model Profile {
 enum ScheduleFrequency {
   daily
   weekly
-}
-  
+}  
+
 model HealthCondition {
   id     String  @id @default(uuid())
   name   String
