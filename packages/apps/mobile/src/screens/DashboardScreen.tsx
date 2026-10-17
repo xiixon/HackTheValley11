@@ -1,0 +1,154 @@
+import { useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { todaysMedications } from '../data/medications';
+import { GreetingHeader } from '../components/dashboard/GreetingHeader';
+import { MedicationList } from '../components/dashboard/MedicationList';
+import { colors } from '../theme/colors';
+
+export function DashboardScreen() {
+  const [medications, setMedications] = useState(todaysMedications);
+  const takenCount = medications.filter(({ status }) => status === 'taken').length;
+  const completionPercentage = Math.round((takenCount / medications.length) * 100);
+
+  const markMedicationTaken = (id: string) => {
+    setMedications((current) =>
+      current.map((medication) =>
+        medication.id === id ? { ...medication, status: 'taken' } : medication,
+      ),
+    );
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
+      <View style={styles.progressCard}>
+        <View style={styles.progressCopy}>
+          <View style={styles.progressEyebrowRow}>
+            <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
+            <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
+          </View>
+          <Text style={styles.progressTitle}>
+            {takenCount === medications.length ? 'All done for today!' : "You're doing great"}
+          </Text>
+          <Text style={styles.progressSubtitle}>
+            {takenCount} of {medications.length} doses logged
+          </Text>
+          <View
+            accessibilityLabel={`${completionPercentage}% of today's medications completed`}
+            accessibilityRole="progressbar"
+            style={styles.progressTrack}
+          >
+            <View style={[styles.progressFill, { width: `${completionPercentage}%` }]} />
+          </View>
+        </View>
+        <View style={styles.progressCircle}>
+          <Text style={styles.progressNumber}>{completionPercentage}%</Text>
+          <Text style={styles.progressCircleLabel}>complete</Text>
+        </View>
+      </View>
+      <MedicationList medications={medications} onMarkTaken={markMedicationTaken} />
+      <View style={styles.note}>
+        <Text style={styles.noteIcon}>✦</Text>
+        <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 24,
+  },
+  progressCard: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    overflow: 'hidden',
+    padding: 22,
+  },
+  progressCopy: {
+    flex: 1,
+  },
+  progressEyebrowRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressEyebrow: {
+    color: colors.background,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  progressPercentage: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  progressTitle: {
+    color: colors.surface,
+    fontSize: 19,
+    fontWeight: '700',
+    marginTop: 7,
+  },
+  progressSubtitle: {
+    color: '#DCE5FF',
+    fontSize: 13,
+    marginTop: 5,
+  },
+  progressTrack: {
+    backgroundColor: '#7184B6',
+    borderRadius: 4,
+    height: 7,
+    marginTop: 15,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressFill: {
+    backgroundColor: colors.accent,
+    borderRadius: 4,
+    height: '100%',
+  },
+  progressCircle: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 40,
+    height: 72,
+    justifyContent: 'center',
+    marginLeft: 14,
+    width: 72,
+  },
+  progressNumber: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  progressCircleLabel: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 1,
+    textTransform: 'uppercase',
+  },
+  note: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  noteIcon: {
+    color: colors.accent,
+    fontSize: 15,
+    marginRight: 7,
+  },
+  noteText: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+});
