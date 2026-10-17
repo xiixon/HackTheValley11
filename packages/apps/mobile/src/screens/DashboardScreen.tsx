@@ -69,7 +69,7 @@ export function DashboardScreen() {
         onCycleMedicationStatus={cycleMedicationStatus}
       />
       <View style={styles.note}>
-        <Text style={styles.noteIcon}>✦</Text>
+        <Text style={styles.noteIcon}>✚</Text>
         <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
       </View>
     </ScrollView>

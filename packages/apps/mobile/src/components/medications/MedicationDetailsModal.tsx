@@ -32,6 +32,16 @@ export function MedicationDetailsModal({
           <Detail label="Frequency" value={medication.Frequency} />
           <Detail label="Time" value={medication.time} />
         </View>
+        {medication.Frequency.toLowerCase().includes("as needed") && (
+          <View style={styles.asNeededNote}>
+            <Text style={styles.asNeededTitle}>What does “as needed” mean?</Text>
+            <Text style={styles.asNeededText}>
+              Take this dose only when the symptoms or situation it was prescribed
+              for occurs. Follow the directions from your healthcare professional
+              for how much to take and how often.
+            </Text>
+          </View>
+        )}
         {medication.scheduledDate && (
           <Text style={styles.scheduledDate}>
             Scheduled for {medication.scheduledDate}
@@ -93,11 +103,14 @@ const styles = StyleSheet.create({
   brand: { color: colors.textMuted, fontSize: 15, marginTop: 4 },
   closeButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   closeText: { color: colors.primary, fontSize: 25, lineHeight: 28 },
-  summary: { backgroundColor: colors.primary, borderRadius: 20, flexDirection: "row", justifyContent: "space-between", marginTop: 28, padding: 18 },
+  summary: { backgroundColor: colors.primary, borderRadius: 20, flexDirection: "row", justifyContent: "space-between", marginTop: 28, paddingHorizontal: 10, paddingVertical: 18 },
+  asNeededNote: { backgroundColor: colors.surfaceMuted, borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginTop: 14, padding: 14 },
+  asNeededTitle: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+  asNeededText: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 5 },
   scheduledDate: { color: colors.textMuted, fontSize: 13, marginTop: 10 },
-  detail: { flex: 1 },
+  detail: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
   detailLabel: { color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: colors.background, fontSize: 14, fontWeight: "700", marginTop: 6 },
+  detailValue: { color: colors.background, fontSize: 13, fontWeight: "700", lineHeight: 18, marginTop: 8 },
   section: { borderBottomColor: colors.border, borderBottomWidth: 1, paddingVertical: 18 },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: "800" },
   sectionValue: { color: colors.textMuted, fontSize: 14, lineHeight: 21, marginTop: 6 },

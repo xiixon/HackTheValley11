@@ -19,7 +19,7 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
   return (
     <View style={styles.card}>
       <View style={[styles.icon, { backgroundColor: medication.color }]}>
-        <Text style={styles.iconText}>✦</Text>
+        <Text style={styles.iconText}>✚</Text>
       </View>
       <View style={styles.details}>
         <Text style={styles.name}>{medication.genericName}</Text>

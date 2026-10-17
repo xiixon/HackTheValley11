@@ -233,85 +233,109 @@ export function Schedule({
                     : styles.doseCardUpcoming,
               ]}
             >
+              <View
+                style={[
+                  styles.doseAccent,
+                  isMissed
+                    ? styles.doseAccentMissed
+                    : isTaken
+                      ? styles.doseAccentTaken
+                      : styles.doseAccentUpcoming,
+                ]}
+              />
               <View style={styles.timeColumn}>
                 <Text style={styles.time}>{medication.time}</Text>
                 <Text style={styles.timeLabel}>
-                  {isMissed ? "MISSED" : isTaken ? "DONE" : "NEXT"}
+                  {isMissed ? "MISSED" : isTaken ? "TAKEN" : "NEXT DOSE"}
                 </Text>
+                {medication.time.toLowerCase().includes("as needed") && (
+                  <Text style={styles.timeHint}>WHEN NEEDED</Text>
+                )}
               </View>
               <View style={styles.cardDivider} />
               <View style={styles.doseDetails}>
-                <View
-                  style={[
-                    styles.medicationDot,
-                    { backgroundColor: medication.color },
-                  ]}
-                />
                 <View style={styles.medicationCopy}>
-                  <Text style={styles.medicationName}>{medication.genericName}</Text>
-                  <Text style={styles.dosage}>{medication.dosage}</Text>
+                  <Text
+                    ellipsizeMode="tail"
+                    numberOfLines={1}
+                    style={styles.medicationName}
+                  >
+                    {medication.genericName}
+                  </Text>
+                  <Text
+                    ellipsizeMode="tail"
+                    numberOfLines={1}
+                    style={styles.dosage}
+                  >
+                    {medication.dosage}
+                  </Text>
                 </View>
               </View>
-              <Pressable
-                accessibilityLabel={
-                  isMissed
-                    ? `${medication.genericName} was missed; mark it as taken`
-                    : `${isTaken ? "Mark" : "Take"} ${medication.genericName}`
-                }
-                accessibilityRole="button"
-                accessibilityState={{ checked: isTaken }}
-                disabled={isMissed}
-                onPress={() => onCycleMedicationStatus(medication.id)}
-                style={({ pressed }) => [
-                  styles.status,
-                  isMissed
-                    ? styles.statusMissed
-                    : isTaken
-                      ? styles.statusTaken
-                      : styles.statusUpcoming,
-                  pressed && styles.statusPressed,
-                ]}
-              >
-                <Text
-                  style={
-                    isMissed
-                      ? styles.statusMissedText
-                      : isTaken
-                        ? styles.statusTakenText
-                        : styles.statusUpcomingText
-                  }
-                >
-                  {isMissed ? "Missed" : isTaken ? "Taken" : "Upcoming"}
-                </Text>
-              </Pressable>
-              {isMissed && (
+              <View style={styles.actionColumn}>
                 <Pressable
-                  accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+                  accessibilityLabel={
+                    isMissed
+                      ? `${medication.genericName} was missed; mark it as taken`
+                      : `${isTaken ? "Mark" : "Take"} ${medication.genericName}`
+                  }
                   accessibilityRole="button"
+                  accessibilityState={{ checked: isTaken }}
+                  disabled={isMissed}
                   onPress={() => onCycleMedicationStatus(medication.id)}
                   style={({ pressed }) => [
-                    styles.markTakenButton,
+                    styles.status,
+                    isMissed
+                      ? styles.statusMissed
+                      : isTaken
+                        ? styles.statusTaken
+                        : styles.statusUpcoming,
                     pressed && styles.statusPressed,
                   ]}
                 >
-                  <Text style={styles.markTakenButtonText}>Mark taken</Text>
+                  <Text
+                    style={
+                      isMissed
+                        ? styles.statusMissedText
+                        : isTaken
+                          ? styles.statusTakenText
+                          : styles.statusUpcomingText
+                    }
+                  >
+                    {isMissed ? "Missed" : isTaken ? "Taken" : "Upcoming"}
+                  </Text>
                 </Pressable>
-              )}
-              <Pressable
-                accessibilityLabel={`View details for ${medication.genericName}`}
-                accessibilityRole="button"
-                onPress={() => setDetailsMedication(medication)}
-                style={styles.detailsButton}
-              >
-                <Text style={styles.detailsButtonText}>Details</Text>
-              </Pressable>
+                {isMissed && (
+                  <Pressable
+                    accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+                    accessibilityRole="button"
+                    onPress={() => onCycleMedicationStatus(medication.id)}
+                    style={({ pressed }) => [
+                      styles.markTakenButton,
+                      pressed && styles.statusPressed,
+                    ]}
+                  >
+                    <Text style={styles.markTakenButtonText}>Mark taken</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  accessibilityLabel={`View details for ${medication.genericName}`}
+                  accessibilityRole="button"
+                  onPress={() => setDetailsMedication(medication)}
+                  style={({ pressed }) => [
+                    styles.detailsButton,
+                    pressed && styles.statusPressed,
+                  ]}
+                >
+                  <Text style={styles.detailsButtonText}>Details</Text>
+                </Pressable>
+              </View>
             </View>
           );
         })}
 
         {selectedMedications.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>✦</Text>
+            <Text style={styles.emptyStateIcon}>✚</Text>
             <Text style={styles.emptyStateTitle}>Nothing scheduled</Text>
             <Text style={styles.emptyStateText}>
               No medications have been added for this day yet.
@@ -883,85 +907,129 @@ const styles = StyleSheet.create({
   },
   timeColumn: {
     alignItems: "flex-end",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: 13,
+    borderWidth: 1,
+    flexShrink: 0,
     justifyContent: "center",
-    width: 78,
+    minHeight: 60,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    width: 92,
   },
   time: {
     color: colors.primary,
-    fontSize: 19,
+    fontSize: 15,
     fontWeight: "800",
+    letterSpacing: -0.2,
+    textAlign: "right",
   },
   timeLabel: {
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "800",
     letterSpacing: 1,
-    marginTop: 5,
+    marginTop: 4,
+  },
+  timeHint: {
+    color: colors.primary,
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 0.7,
+    marginTop: 3,
   },
   cardDivider: {
     backgroundColor: colors.border,
-    height: 48,
-    marginHorizontal: 16,
+    height: 52,
+    marginHorizontal: 10,
     width: 1,
   },
   doseCard: {
     alignItems: "center",
     flexDirection: "row",
-    borderRadius: 24,
+    borderRadius: 18,
     marginBottom: 16,
     minHeight: 118,
-    padding: 20,
+    overflow: "hidden",
+    paddingHorizontal: 16,
+    paddingVertical: 18,
   },
   doseCardTaken: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: "#CFE3D5",
     borderWidth: 1,
   },
   doseCardUpcoming: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.surface,
+    borderColor: "#BBDCEB",
+    borderWidth: 1,
   },
   doseCardMissed: {
-    backgroundColor: colors.accent,
-    borderColor: colors.primary,
+    backgroundColor: "#FFF8F8",
+    borderColor: colors.accent,
     borderWidth: 2,
   },
-  medicationDot: {
-    borderRadius: 8,
-    height: 18,
-    width: 18,
+  doseAccent: {
+    alignSelf: "stretch",
+    borderRadius: 2,
+    marginLeft: -16,
+    marginRight: 12,
+    width: 4,
+  },
+  doseAccentUpcoming: {
+    backgroundColor: colors.secondary,
+  },
+  doseAccentTaken: {
+    backgroundColor: "#9EE3BB",
+  },
+  doseAccentMissed: {
+    backgroundColor: colors.accent,
   },
   doseDetails: {
     flex: 1,
-    flexDirection: "row",
-    marginLeft: 16,
+    minWidth: 0,
   },
   medicationCopy: {
     flex: 1,
-    marginLeft: 11,
+    minWidth: 0,
   },
   medicationName: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   dosage: {
     color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 13,
+    marginTop: 5,
+  },
+  actionColumn: {
+    alignItems: "stretch",
+    flexShrink: 0,
+    marginLeft: 8,
+    width: 78,
   },
   status: {
-    borderRadius: 12,
-    marginLeft: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 10,
+    minHeight: 34,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
   },
   statusPressed: {
     opacity: 0.72,
   },
   detailsButton: {
-    alignSelf: "center",
-    marginLeft: 8,
-    paddingVertical: 8,
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    marginTop: 7,
+    minHeight: 30,
   },
   detailsButtonText: {
     color: colors.primary,
@@ -969,40 +1037,42 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   statusTaken: {
-    backgroundColor: colors.successSurface,
+    backgroundColor: "#DDEFE4",
   },
   statusUpcoming: {
-    backgroundColor: colors.background,
-  },
-  statusTakenText: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  statusUpcomingText: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  statusMissed: {
     backgroundColor: colors.primary,
   },
-  statusMissedText: {
+  statusTakenText: {
+    color: "#285B3C",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  statusUpcomingText: {
     color: colors.background,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  statusMissed: {
+    backgroundColor: colors.accent,
+  },
+  statusMissedText: {
+    color: colors.primary,
     fontSize: 11,
     fontWeight: "900",
   },
   markTakenButton: {
-    borderColor: colors.primary,
+    backgroundColor: "#FFE2E7",
+    borderColor: colors.accent,
     borderRadius: 10,
     borderWidth: 1,
-    marginLeft: 8,
-    paddingHorizontal: 8,
+    marginTop: 7,
+    paddingHorizontal: 6,
     paddingVertical: 7,
   },
   markTakenButtonText: {
     color: colors.primary,
     fontSize: 10,
     fontWeight: "900",
+    textAlign: "center",
   },
 });
