@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo/log-box": "~57.0.4",
+    "@expo/metro-runtime": "~57.0.17",
     "expo": "~57.0.30",
     "expo-constants": "~57.0.22",
     "expo-linking": "~57.0.13",
