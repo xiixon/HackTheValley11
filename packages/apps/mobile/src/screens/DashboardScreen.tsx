@@ -13,13 +13,21 @@ export function DashboardScreen() {
   const takenCount = medications.filter(({ status }) => status === 'taken').length;
   const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
-  const markMedicationTaken = (id: string) => {
-    setMedications((current) =>
-      current.map((medication) =>
-        medication.id === id ? { ...medication, status: 'taken' } : medication,
-      ),
-    );
-  };
+  const toggleMedicationTaken = (id: string) => {
+  setMedications((current) =>
+    current.map((medication) =>
+      medication.id === id
+        ? {
+            ...medication,
+            status:
+              medication.status === 'taken'
+                ? 'upcoming'
+                : 'taken',
+          }
+        : medication,
+    ),
+  );
+};
 
   return (
     <ScrollView
@@ -53,7 +61,7 @@ export function DashboardScreen() {
           <Text style={styles.progressCircleLabel}>complete</Text>
         </View>
       </View>
-      <MedicationList medications={medications} onMarkTaken={markMedicationTaken} />
+      <MedicationList medications={medications} onMarkTaken={toggleMedicationTaken} />
       <View style={styles.note}>
         <Text style={styles.noteIcon}>✦</Text>
         <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
