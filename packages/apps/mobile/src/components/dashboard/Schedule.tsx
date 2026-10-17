@@ -1,4 +1,11 @@
-import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import React, { useState } from "react";
 
 import { Medication } from "../../types/medication";
@@ -17,24 +24,18 @@ function getDateKey(date: Date) {
 }
 
 export function Schedule({ medicationsByDate }: ScheduleProps) {
-  const [now] = useState(() => new Date());
-  const [selectedIndex, setSelectedIndex] = useState(2);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
 
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   const dates = Array.from({ length: 5 }, (_, index) => {
-    const date = new Date(now);
-    date.setDate(date.getDate() + index - 2);
+    const date = new Date(selectedDate);
+    date.setDate(selectedDate.getDate() + index - 2);
     return date;
   });
 
-  const formattedDates = dates.map((date) => {
-    const label = weekdays[date.getDay()];
-    const number = date.getDate();
-
-    return `${label} ${number}`;
-  });
-  const selectedDate = dates[selectedIndex];
   const selectedDateKey = getDateKey(selectedDate);
   const selectedMedications = medicationsByDate[selectedDateKey] ?? [];
   const selectedDateLabel = selectedDate.toLocaleDateString(undefined, {
@@ -46,6 +47,33 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
   const untakenDoses = selectedMedications.filter(
     (medication) => medication.status !== "taken",
   ).length;
+  const monthStart = new Date(
+    calendarMonth.getFullYear(),
+    calendarMonth.getMonth(),
+    1,
+  );
+  const monthDays = new Date(
+    calendarMonth.getFullYear(),
+    calendarMonth.getMonth() + 1,
+    0,
+  ).getDate();
+  const calendarCells: (Date | null)[] = [
+    ...Array.from({ length: monthStart.getDay() }, () => null),
+    ...Array.from({ length: monthDays }, (_, index) => {
+      return new Date(
+        calendarMonth.getFullYear(),
+        calendarMonth.getMonth(),
+        index + 1,
+      );
+    }),
+  ];
+  while (calendarCells.length % 7 !== 0) calendarCells.push(null);
+
+  const changeMonth = (amount: number) => {
+    setCalendarMonth(
+      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + amount, 1),
+    );
+  };
 
   return (
     <ScrollView
@@ -74,17 +102,18 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
       </View>
 
       <View style={styles.dateRail}>
-        {formattedDates.map((day, index) => {
-          const [label, number] = day.split(" ");
-          const isActive = index === selectedIndex;
+        {dates.map((date) => {
+          const label = weekdays[date.getDay()];
+          const number = date.getDate();
+          const isActive = getDateKey(date) === selectedDateKey;
 
           return (
             <Pressable
               accessibilityLabel={`Select ${label} ${number}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
-              key={day}
-              onPress={() => setSelectedIndex(index)}
+              key={getDateKey(date)}
+              onPress={() => setSelectedDate(date)}
               style={({ pressed }) => [
                 styles.dateItem,
                 isActive && styles.dateItemActive,
@@ -112,11 +141,22 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
           <Text style={styles.sectionTitle}>Scheduled doses</Text>
           <Text style={styles.sectionSubtitle}>{selectedDateLabel}</Text>
         </View>
-        {/* TODO: Connect this control to a calendar modal or date picker. */}
-        <View style={styles.calendarButton}>
-          <Text style={styles.calendarIcon}>▣</Text>
+        <Pressable
+          accessibilityLabel="Open date picker"
+          accessibilityRole="button"
+          onPress={() => {
+            setCalendarMonth(
+              new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+            );
+            setIsCalendarVisible(true);
+          }}
+          style={({ pressed }) => [
+            styles.calendarButton,
+            pressed && styles.calendarButtonPressed,
+          ]}
+        >
           <Text style={styles.calendarLabel}>Change day</Text>
-        </View>
+        </Pressable>
       </View>
 
       {/* TODO: Add dose actions here when schedule editing and completion logic are ready. */}
@@ -180,6 +220,123 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
           </View>
         )}
       </View>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setIsCalendarVisible(false)}
+        transparent
+        visible={isCalendarVisible}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            accessibilityLabel="Close date picker"
+            accessibilityRole="button"
+            onPress={() => setIsCalendarVisible(false)}
+            style={styles.modalBackdrop}
+          />
+          <View style={styles.calendarModal}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalKicker}>SELECT A DAY</Text>
+                <Text style={styles.modalTitle}>Your schedule</Text>
+              </View>
+              <Pressable
+                accessibilityLabel="Close date picker"
+                accessibilityRole="button"
+                onPress={() => setIsCalendarVisible(false)}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && styles.calendarButtonPressed,
+                ]}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </Pressable>
+            </View>
+            <View style={styles.monthHeader}>
+              <Pressable
+                accessibilityLabel="Previous month"
+                accessibilityRole="button"
+                onPress={() => changeMonth(-1)}
+                style={styles.monthArrow}
+              >
+                <Text style={styles.monthArrowText}>‹</Text>
+              </Pressable>
+              <Text style={styles.modalMonth}>
+                {calendarMonth.toLocaleDateString(undefined, {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+              <Pressable
+                accessibilityLabel="Next month"
+                accessibilityRole="button"
+                onPress={() => changeMonth(1)}
+                style={styles.monthArrow}
+              >
+                <Text style={styles.monthArrowText}>›</Text>
+              </Pressable>
+            </View>
+            <View style={styles.weekdayRow}>
+              {weekdays.map((weekday) => (
+                <Text key={weekday} style={styles.weekdayLabel}>
+                  {weekday.slice(0, 2)}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendarCells.map((date, index) => {
+                if (!date) {
+                  return <View key={`empty-${index}`} style={styles.calendarCell} />;
+                }
+
+                const isActive = getDateKey(date) === selectedDateKey;
+                const label = date.toLocaleDateString(undefined, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                });
+
+                return (
+                  <Pressable
+                    accessibilityLabel={`Select ${label}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isActive }}
+                    key={getDateKey(date)}
+                    onPress={() => {
+                      setSelectedDate(date);
+                      setIsCalendarVisible(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.calendarCell,
+                      isActive && styles.calendarCellActive,
+                      pressed && styles.modalDateOptionPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayNumber,
+                        isActive && styles.calendarDayNumberActive,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Pressable
+              accessibilityLabel="Keep current date"
+              accessibilityRole="button"
+              onPress={() => setIsCalendarVisible(false)}
+              style={({ pressed }) => [
+                styles.doneButton,
+                pressed && styles.doneButtonPressed,
+              ]}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -324,9 +481,176 @@ const styles = StyleSheet.create({
   },
   calendarLabel: {
     color: colors.primary,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  calendarButtonPressed: {
+    opacity: 0.75,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(36, 52, 94, 0.42)",
+  },
+  calendarModal: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 24,
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalKicker: {
+    color: colors.primary,
     fontSize: 10,
     fontWeight: "800",
-    marginTop: 3,
+    letterSpacing: 1.4,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 26,
+    fontWeight: "800",
+    marginTop: 5,
+  },
+  closeButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  closeButtonText: {
+    color: colors.primary,
+    fontSize: 25,
+    fontWeight: "400",
+    lineHeight: 28,
+  },
+  monthHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+  },
+  modalMonth: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  monthArrow: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  monthArrowText: {
+    color: colors.primary,
+    fontSize: 25,
+    lineHeight: 28,
+  },
+  weekdayRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  weekdayLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: "800",
+    textAlign: "center",
+    width: "14.28%",
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 8,
+  },
+  calendarCell: {
+    alignItems: "center",
+    borderRadius: 16,
+    height: 44,
+    justifyContent: "center",
+    width: "14.28%",
+  },
+  calendarCellActive: {
+    backgroundColor: colors.primary,
+  },
+  calendarDayNumber: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  calendarDayNumberActive: {
+    color: colors.background,
+  },
+  modalDateList: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  modalDateOption: {
+    alignItems: "center",
+    borderRadius: 18,
+    justifyContent: "center",
+    minHeight: 76,
+    minWidth: 54,
+    paddingVertical: 9,
+  },
+  modalDateOptionActive: {
+    backgroundColor: colors.primary,
+  },
+  modalDateOptionPressed: {
+    opacity: 0.7,
+  },
+  modalDateLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  modalDateLabelActive: {
+    color: colors.background,
+  },
+  modalDateNumber: {
+    color: colors.text,
+    fontSize: 21,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  modalDateNumberActive: {
+    color: colors.surface,
+  },
+  modalDateDot: {
+    backgroundColor: colors.accent,
+    borderRadius: 3,
+    height: 5,
+    marginTop: 4,
+    width: 5,
+  },
+  doneButton: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    justifyContent: "center",
+    marginTop: 24,
+    minHeight: 50,
+  },
+  doneButtonPressed: {
+    opacity: 0.8,
+  },
+  doneButtonText: {
+    color: colors.background,
+    fontSize: 15,
+    fontWeight: "800",
   },
   doseList: {
     paddingBottom: 12,
