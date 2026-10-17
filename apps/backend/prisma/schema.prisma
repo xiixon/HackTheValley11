@@ -53,7 +53,13 @@ enum Priority {
 }
 
 model User {
-  id       String    @id @default(uuid())
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
   profile  Profile?                  // one-to-one
   schedules Schedule[]               // one user has many schedules
 }
@@ -63,7 +69,17 @@ model Profile {
   user     User     @relation(fields: [userId], references: [id])
   weightKg Float
   heightCm Float
+  healthConditions HealthCondition[]
   allergies String[]
+}
+
+model HealthCondition {
+  id     String  @id @default(uuid())
+  name   String
+  notes  String?
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [userId], onDelete: Cascade)
 }
 
 model Schedule {
