@@ -8,14 +8,18 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 
-import { Medication, MedicationFormValues } from "../../types/medication";
+import {
+  getMedicationDisplayStatus,
+  Medication,
+  MedicationFormValues,
+} from "../../types/medication";
 import { colors } from "../../theme/colors";
 import { AddMedicationModal } from "../medications/AddMedicationModal";
 import { MedicationDetailsModal } from "../medications/MedicationDetailsModal";
 
 type ScheduleProps = {
   medicationsByDate: Record<string, Medication[]>;
-  onToggleMedication: (id: string) => void;
+  onCycleMedicationStatus: (id: string) => void;
   onAddMedication: (date: Date, medication: MedicationFormValues) => void;
 };
 
@@ -29,7 +33,7 @@ function getDateKey(date: Date) {
 
 export function Schedule({
   medicationsByDate,
-  onToggleMedication,
+  onCycleMedicationStatus,
   onAddMedication,
 }: ScheduleProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
@@ -57,6 +61,23 @@ export function Schedule({
   const untakenDoses = selectedMedications.filter(
     (medication) => medication.status !== "taken",
   ).length;
+  const getDaySummary = (date: Date) => {
+    const dayMedications = medicationsByDate[getDateKey(date)] ?? [];
+    const hasMissed = dayMedications.some(
+      (medication) => getMedicationDisplayStatus(medication) === "missed",
+    );
+    const allTaken =
+      dayMedications.length > 0 &&
+      dayMedications.every(
+        (medication) => getMedicationDisplayStatus(medication) === "taken",
+      );
+
+    return {
+      hasMissed,
+      allTaken,
+      hasScheduled: dayMedications.length > 0,
+    };
+  };
   const monthStart = new Date(
     calendarMonth.getFullYear(),
     calendarMonth.getMonth(),
@@ -116,6 +137,7 @@ export function Schedule({
           const label = weekdays[date.getDay()];
           const number = date.getDate();
           const isActive = getDateKey(date) === selectedDateKey;
+          const summary = getDaySummary(date);
 
           return (
             <Pressable
@@ -140,7 +162,18 @@ export function Schedule({
               >
                 {number}
               </Text>
-              {isActive && <View style={styles.dateDot} />}
+              {summary.hasScheduled && (
+                <View
+                  style={[
+                    isActive ? styles.dateDot : styles.dateStatusDot,
+                    summary.hasMissed
+                      ? styles.dateStatusDotMissed
+                      : summary.allTaken
+                        ? styles.dateStatusDotTaken
+                        : styles.dateStatusDotUpcoming,
+                  ]}
+                />
+              )}
             </Pressable>
           );
         })}
@@ -184,20 +217,26 @@ export function Schedule({
 
       <View style={styles.doseList}>
         {selectedMedications.map((medication) => {
-          const isTaken = medication.status === "taken";
+          const displayStatus = getMedicationDisplayStatus(medication);
+          const isTaken = displayStatus === "taken";
+          const isMissed = displayStatus === "missed";
 
           return (
             <View
               key={medication.id}
               style={[
                 styles.doseCard,
-                isTaken ? styles.doseCardTaken : styles.doseCardUpcoming,
+                isMissed
+                  ? styles.doseCardMissed
+                  : isTaken
+                    ? styles.doseCardTaken
+                    : styles.doseCardUpcoming,
               ]}
             >
               <View style={styles.timeColumn}>
                 <Text style={styles.time}>{medication.time}</Text>
                 <Text style={styles.timeLabel}>
-                  {isTaken ? "DONE" : "NEXT"}
+                  {isMissed ? "MISSED" : isTaken ? "DONE" : "NEXT"}
                 </Text>
               </View>
               <View style={styles.cardDivider} />
@@ -214,24 +253,50 @@ export function Schedule({
                 </View>
               </View>
               <Pressable
-                accessibilityLabel={`${isTaken ? "Undo taken status for" : "Mark"} ${medication.genericName}`}
+                accessibilityLabel={
+                  isMissed
+                    ? `${medication.genericName} was missed; mark it as taken`
+                    : `${isTaken ? "Mark" : "Take"} ${medication.genericName}`
+                }
                 accessibilityRole="button"
                 accessibilityState={{ checked: isTaken }}
-                onPress={() => onToggleMedication(medication.id)}
+                disabled={isMissed}
+                onPress={() => onCycleMedicationStatus(medication.id)}
                 style={({ pressed }) => [
                   styles.status,
-                  isTaken ? styles.statusTaken : styles.statusUpcoming,
+                  isMissed
+                    ? styles.statusMissed
+                    : isTaken
+                      ? styles.statusTaken
+                      : styles.statusUpcoming,
                   pressed && styles.statusPressed,
                 ]}
               >
                 <Text
                   style={
-                    isTaken ? styles.statusTakenText : styles.statusUpcomingText
+                    isMissed
+                      ? styles.statusMissedText
+                      : isTaken
+                        ? styles.statusTakenText
+                        : styles.statusUpcomingText
                   }
                 >
-                  {isTaken ? "Taken" : "Upcoming"}
+                  {isMissed ? "Missed" : isTaken ? "Taken" : "Upcoming"}
                 </Text>
               </Pressable>
+              {isMissed && (
+                <Pressable
+                  accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+                  accessibilityRole="button"
+                  onPress={() => onCycleMedicationStatus(medication.id)}
+                  style={({ pressed }) => [
+                    styles.markTakenButton,
+                    pressed && styles.statusPressed,
+                  ]}
+                >
+                  <Text style={styles.markTakenButtonText}>Mark taken</Text>
+                </Pressable>
+              )}
               <Pressable
                 accessibilityLabel={`View details for ${medication.genericName}`}
                 accessibilityRole="button"
@@ -332,6 +397,7 @@ export function Schedule({
                 }
 
                 const isActive = getDateKey(date) === selectedDateKey;
+                const summary = getDaySummary(date);
                 const label = date.toLocaleDateString(undefined, {
                   weekday: "long",
                   month: "long",
@@ -362,6 +428,18 @@ export function Schedule({
                     >
                       {date.getDate()}
                     </Text>
+                    {summary.hasScheduled && (
+                      <View
+                        style={[
+                          styles.calendarDayMarker,
+                          summary.hasMissed
+                            ? styles.calendarDayMarkerMissed
+                            : summary.allTaken
+                              ? styles.calendarDayMarkerTaken
+                              : styles.calendarDayMarkerUpcoming,
+                        ]}
+                      />
+                    )}
                   </Pressable>
                 );
               })}
@@ -500,6 +578,21 @@ const styles = StyleSheet.create({
     height: 5,
     marginTop: 4,
     width: 5,
+  },
+  dateStatusDot: {
+    borderRadius: 3,
+    height: 5,
+    marginTop: 4,
+    width: 5,
+  },
+  dateStatusDotMissed: {
+    backgroundColor: colors.accent,
+  },
+  dateStatusDotTaken: {
+    backgroundColor: colors.primary,
+  },
+  dateStatusDotUpcoming: {
+    backgroundColor: colors.secondary,
   },
   sectionHeader: {
     alignItems: "center",
@@ -663,6 +756,21 @@ const styles = StyleSheet.create({
   calendarDayNumberActive: {
     color: colors.background,
   },
+  calendarDayMarker: {
+    borderRadius: 2,
+    height: 3,
+    marginTop: 3,
+    width: 18,
+  },
+  calendarDayMarkerMissed: {
+    backgroundColor: colors.accent,
+  },
+  calendarDayMarkerTaken: {
+    backgroundColor: colors.primary,
+  },
+  calendarDayMarkerUpcoming: {
+    backgroundColor: colors.secondary,
+  },
   modalDateList: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -812,6 +920,11 @@ const styles = StyleSheet.create({
   doseCardUpcoming: {
     backgroundColor: colors.secondary,
   },
+  doseCardMissed: {
+    backgroundColor: colors.accent,
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
   medicationDot: {
     borderRadius: 8,
     height: 18,
@@ -870,5 +983,26 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 11,
     fontWeight: "700",
+  },
+  statusMissed: {
+    backgroundColor: colors.primary,
+  },
+  statusMissedText: {
+    color: colors.background,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  markTakenButton: {
+    borderColor: colors.primary,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+  },
+  markTakenButtonText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: "900",
   },
 });

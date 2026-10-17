@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 
-import { Medication } from '../../types/medication';
+import { getMedicationDisplayStatus, Medication } from '../../types/medication';
 import { colors } from '../../theme/colors';
 import { MedicationDetailsModal } from '../medications/MedicationDetailsModal';
 
@@ -11,7 +11,9 @@ type MedicationCardProps = {
 };
 
 export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps) {
-  const isTaken = medication.status === 'taken';
+  const displayStatus = getMedicationDisplayStatus(medication);
+  const isTaken = displayStatus === 'taken';
+  const isMissed = displayStatus === 'missed';
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
 
   return (
@@ -25,20 +27,36 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
         <Text style={styles.time}>{medication.time}</Text>
       </View>
       <Pressable
-        accessibilityLabel={`${isTaken ? 'Undo taken status for' : 'Mark'} ${medication.genericName}`}
+        accessibilityLabel={
+          isMissed
+            ? `${medication.genericName} was missed; mark it as taken`
+            : `${isTaken ? 'Mark' : 'Take'} ${medication.genericName}`
+        }
         accessibilityRole="button"
         accessibilityState={{ checked: isTaken }}
+        disabled={isMissed}
         onPress={() => onMarkTaken(medication.id)}
         style={({ pressed }) => [
-          isTaken ? styles.takenButton : styles.takeButton,
+          isMissed ? styles.missedButton : isTaken ? styles.takenButton : styles.takeButton,
           pressed && styles.pressed,
         ]}
       >
         {isTaken && <Text style={styles.takenCheck}>✓</Text>}
-        <Text style={isTaken ? styles.takenText : styles.takeButtonText}>
-          {isTaken ? 'Taken' : 'Upcoming'}
+        {isMissed && <Text style={styles.missedMark}>!</Text>}
+        <Text style={isMissed ? styles.missedText : isTaken ? styles.takenText : styles.takeButtonText}>
+          {isMissed ? 'Missed' : isTaken ? 'Taken' : 'Upcoming'}
         </Text>
       </Pressable>
+      {isMissed && (
+        <Pressable
+          accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+          accessibilityRole="button"
+          onPress={() => onMarkTaken(medication.id)}
+          style={({ pressed }) => [styles.markTakenButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.markTakenText}>Mark taken</Text>
+        </Pressable>
+      )}
       <Pressable accessibilityLabel={`View details for ${medication.genericName}`} accessibilityRole="button" onPress={() => setIsDetailsVisible(true)}>
         <Text style={styles.detailsLink}>Details</Text>
       </Pressable>
@@ -124,6 +142,38 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 11,
     fontWeight: '700',
+  },
+  missedButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  missedMark: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '900',
+    marginRight: 4,
+  },
+  missedText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  markTakenButton: {
+    borderColor: colors.primary,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+  },
+  markTakenText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '900',
   },
   pressed: {
     opacity: 0.75,
