@@ -18,7 +18,7 @@ export type Contact =
 // User data
 export type UserProfile = {
     weightKg: number;
-    heightKg: number;
+    heightCm: number;
     conditions: HealthCondition[];
     allergies: string[];
 }

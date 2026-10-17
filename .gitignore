@@ -44,3 +44,6 @@ yarn-error.*
 node_modules
 .env
 dist
+.agents
+.claude
+.windsurf

@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DosageForm {
+  tablet
+  capsule
+  powder
+  liquid
+  cream
+  inhaler
+}
+
+model Medication {
+  id                   String       @id @default(uuid())
+  genericName          String
+  brandName            String
+  ingredients          Ingredient[]
+  purposes             String[]
+  dosageForm           DosageForm
+
+  frequency            String
+  doseAmount           Float
+  warning              String[]
+  avoidWithConditions  String[]
+  avoidWithIngredients String[]
+
+  schedules            Schedule[]
+}
+
+model Ingredient {
+  id           String     @id @default(uuid())
+  name         String
+  strengthMg   Float
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id])
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+model User {
+  id       String    @id @default(uuid())
+  profile  Profile?                  // one-to-one
+  schedules Schedule[]               // one user has many schedules
+}
+
+model Profile {
+  userId   String   @id
+  user     User     @relation(fields: [userId], references: [id])
+  weightKg Float
+  heightCm Float
+  allergies String[]
+}
+
+model Schedule {
+  id           String     @id @default(uuid())
+  userId       String                                   // the foreign key
+  user         User       @relation(fields: [userId], references: [id])
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id])
+  times        String[]
+  startDate    String
+  endDate      String?
+  isActive     Boolean    @default(true)
+}
