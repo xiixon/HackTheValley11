@@ -7,9 +7,10 @@ import { colors } from '../../theme/colors';
 type MedicationListProps = {
   medications: Medication[];
   onCycleMedicationStatus: (id: string) => void;
+  onEditMedication: (medication: Medication) => void;
 };
 
-export function MedicationList({ medications, onCycleMedicationStatus }: MedicationListProps) {
+export function MedicationList({ medications, onCycleMedicationStatus, onEditMedication }: MedicationListProps) {
   return (
     <View>
       <View style={styles.headingRow}>
@@ -17,7 +18,7 @@ export function MedicationList({ medications, onCycleMedicationStatus }: Medicat
         <Text style={styles.count}>{medications.length} total</Text>
       </View>
       {medications.map((medication) => (
-        <MedicationCard key={medication.id} medication={medication} onMarkTaken={onCycleMedicationStatus} />
+        <MedicationCard key={medication.id} medication={medication} onMarkTaken={onCycleMedicationStatus} onEditMedication={onEditMedication} />
       ))}
     </View>
   );

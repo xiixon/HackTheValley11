@@ -4,12 +4,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
 import { MedicationList } from '../components/dashboard/MedicationList';
 import { useMedications } from '../context/MedicationContext';
-import { getMedicationDisplayStatus } from '../types/medication';
+import { getMedicationDisplayStatus, Medication } from '../types/medication';
+import { AddMedicationModal } from '../components/medications/AddMedicationModal';
+import { useState } from 'react';
 import { colors } from '../theme/colors';
 
 export function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { medicationsByDate, cycleMedicationStatus } = useMedications();
+  const { updateMedication } = useMedications();
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const medications = medicationsByDate[todayKey] ?? [];
@@ -67,6 +71,17 @@ export function DashboardScreen() {
       <MedicationList
         medications={medications}
         onCycleMedicationStatus={cycleMedicationStatus}
+        onEditMedication={setEditingMedication}
+      />
+      <AddMedicationModal
+        key={editingMedication?.id ?? "new-medication"}
+        date={today}
+        medication={editingMedication}
+        onClose={() => setEditingMedication(null)}
+        onSubmit={(updated) => {
+          if (editingMedication) updateMedication(editingMedication.id, updated);
+        }}
+        visible={editingMedication !== null}
       />
       <View style={styles.note}>
         <Text style={styles.noteIcon}>✚</Text>

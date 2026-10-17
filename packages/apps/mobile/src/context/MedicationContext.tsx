@@ -7,6 +7,7 @@ type MedicationContextValue = {
   medicationsByDate: Record<string, Medication[]>;
   cycleMedicationStatus: (id: string) => void;
   addMedication: (date: Date, medication: MedicationFormValues) => void;
+  updateMedication: (id: string, medication: MedicationFormValues) => void;
 };
 
 const MedicationContext = createContext<MedicationContextValue | undefined>(
@@ -67,8 +68,38 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateMedication = (id: string, medication: MedicationFormValues) => {
+    setMedicationsByDate((current) => {
+      const next = { ...current };
+
+      for (const dateKey of Object.keys(next)) {
+        const existing = next[dateKey].find((item) => item.id === id);
+        if (!existing) continue;
+
+        next[dateKey] = next[dateKey].map((item) =>
+          item.id === id
+            ? {
+                ...medication,
+                scheduledDate: item.scheduledDate ?? dateKey,
+                status: item.status,
+                dosage: `${medication.doseAmount} ${medication.dosageForm}`,
+              }
+            : item,
+        );
+        break;
+      }
+
+      return next;
+    });
+  };
+
   const value = useMemo(
-    () => ({ medicationsByDate, cycleMedicationStatus, addMedication }),
+    () => ({
+      medicationsByDate,
+      cycleMedicationStatus,
+      addMedication,
+      updateMedication,
+    }),
     [medicationsByDate],
   );
 

@@ -8,9 +8,10 @@ import { MedicationDetailsModal } from '../medications/MedicationDetailsModal';
 type MedicationCardProps = {
   medication: Medication;
   onMarkTaken: (id: string) => void;
+  onEditMedication: (medication: Medication) => void;
 };
 
-export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps) {
+export function MedicationCard({ medication, onMarkTaken, onEditMedication }: MedicationCardProps) {
   const displayStatus = getMedicationDisplayStatus(medication);
   const isTaken = displayStatus === 'taken';
   const isMissed = displayStatus === 'missed';
@@ -60,7 +61,14 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
       <Pressable accessibilityLabel={`View details for ${medication.genericName}`} accessibilityRole="button" onPress={() => setIsDetailsVisible(true)}>
         <Text style={styles.detailsLink}>Details</Text>
       </Pressable>
-      <MedicationDetailsModal medication={isDetailsVisible ? medication : null} onClose={() => setIsDetailsVisible(false)} />
+      <MedicationDetailsModal
+        medication={isDetailsVisible ? medication : null}
+        onClose={() => setIsDetailsVisible(false)}
+        onEdit={(selectedMedication) => {
+          setIsDetailsVisible(false);
+          onEditMedication(selectedMedication);
+        }}
+      />
     </View>
   );
 }

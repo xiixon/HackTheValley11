@@ -21,6 +21,7 @@ type ScheduleProps = {
   medicationsByDate: Record<string, Medication[]>;
   onCycleMedicationStatus: (id: string) => void;
   onAddMedication: (date: Date, medication: MedicationFormValues) => void;
+  onUpdateMedication: (id: string, medication: MedicationFormValues) => void;
 };
 
 function getDateKey(date: Date) {
@@ -35,12 +36,14 @@ export function Schedule({
   medicationsByDate,
   onCycleMedicationStatus,
   onAddMedication,
+  onUpdateMedication,
 }: ScheduleProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [isAddMedicationVisible, setIsAddMedicationVisible] = useState(false);
   const [detailsMedication, setDetailsMedication] = useState<Medication | null>(null);
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
 
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -483,6 +486,7 @@ export function Schedule({
         </View>
       </Modal>
       <AddMedicationModal
+        key={editingMedication?.id ?? "new-medication"}
         date={selectedDate}
         onClose={() => setIsAddMedicationVisible(false)}
         onSubmit={(medication) => onAddMedication(selectedDate, medication)}
@@ -491,6 +495,19 @@ export function Schedule({
       <MedicationDetailsModal
         medication={detailsMedication}
         onClose={() => setDetailsMedication(null)}
+        onEdit={(medication) => {
+          setDetailsMedication(null);
+          setEditingMedication(medication);
+        }}
+      />
+      <AddMedicationModal
+        date={selectedDate}
+        medication={editingMedication}
+        onClose={() => setEditingMedication(null)}
+        onSubmit={(updated) => {
+          if (editingMedication) onUpdateMedication(editingMedication.id, updated);
+        }}
+        visible={editingMedication !== null}
       />
     </ScrollView>
   );

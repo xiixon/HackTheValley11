@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { MedicationFormValues } from "../../types/medication";
+import { Medication, MedicationFormValues } from "../../types/medication";
 import { colors } from "../../theme/colors";
 
 type AddMedicationModalProps = {
@@ -20,6 +20,7 @@ type AddMedicationModalProps = {
   visible: boolean;
   onClose: () => void;
   onSubmit: (values: MedicationFormValues) => void;
+  medication?: Medication | null;
 };
 
 const initialValues: MedicationFormValues = {
@@ -43,10 +44,31 @@ export function AddMedicationModal({
   visible,
   onClose,
   onSubmit,
+  medication = null,
 }: AddMedicationModalProps) {
-  const [values, setValues] = useState(initialValues);
-  const [ingredientName, setIngredientName] = useState("");
-  const [ingredientStrength, setIngredientStrength] = useState("0");
+  const [values, setValues] = useState<MedicationFormValues>(() =>
+    medication ? getFormValues(medication) : initialValues,
+  );
+  const [ingredientName, setIngredientName] = useState(
+    medication?.ingredients[0]?.name ?? "",
+  );
+  const [ingredientStrength, setIngredientStrength] = useState(
+    String(medication?.ingredients[0]?.strength ?? 0),
+  );
+
+  const resetForm = () => {
+    if (medication) {
+      setValues(getFormValues(medication));
+      const ingredient = medication.ingredients[0];
+      setIngredientName(ingredient?.name ?? "");
+      setIngredientStrength(String(ingredient?.strength ?? 0));
+      return;
+    }
+
+    setValues(initialValues);
+    setIngredientName("");
+    setIngredientStrength("0");
+  };
 
   const update = <K extends keyof MedicationFormValues>(
     key: K,
@@ -67,9 +89,7 @@ export function AddMedicationModal({
         : [],
       purposes: values.purposes,
     });
-    setValues(initialValues);
-    setIngredientName("");
-    setIngredientStrength("0");
+    resetForm();
     onClose();
   };
 
@@ -80,8 +100,8 @@ export function AddMedicationModal({
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
               <View>
-                <Text style={styles.kicker}>ADD TO {date.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase()}</Text>
-                <Text style={styles.title}>New medication</Text>
+                <Text style={styles.kicker}>{medication ? "EDIT MEDICATION" : `ADD TO ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase()}`}</Text>
+                <Text style={styles.title}>{medication ? "Edit medication" : "New medication"}</Text>
               </View>
               <Pressable accessibilityLabel="Close add medication form" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>×</Text>
@@ -105,13 +125,31 @@ export function AddMedicationModal({
             </View>
             <Field label="Purpose (optional)" value={values.purposes[0] ?? ""} onChangeText={(value) => update("purposes", value ? [value] : [])} placeholder="What is it for?" />
             <Pressable accessibilityLabel="Save medication" accessibilityRole="button" disabled={!canSubmit} onPress={submit} style={[styles.saveButton, !canSubmit && styles.saveButtonDisabled]}>
-              <Text style={styles.saveButtonText}>Add medication</Text>
+              <Text style={styles.saveButtonText}>{medication ? "Save changes" : "Add medication"}</Text>
             </Pressable>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
   );
+}
+
+function getFormValues(medication: Medication): MedicationFormValues {
+  return {
+    id: medication.id,
+    genericName: medication.genericName,
+    brandName: medication.brandName,
+    ingredients: medication.ingredients,
+    purposes: medication.purposes,
+    dosageForm: medication.dosageForm,
+    Frequency: medication.Frequency,
+    doseAmount: medication.doseAmount,
+    warning: medication.warning,
+    avoidWithConditions: medication.avoidWithConditions,
+    avoidWithIngredients: medication.avoidWithIngredients,
+    time: medication.time,
+    color: medication.color,
+  };
 }
 
 function Field(props: ComponentProps<typeof TextInput> & { label: string }) {
