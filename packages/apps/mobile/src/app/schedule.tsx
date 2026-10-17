@@ -1,5 +1,6 @@
-import { PlaceholderScreen } from '../screens/PlaceholderScreen';
+import { todaysMedications } from '../data/medications';
+import { Schedule } from '../components/dashboard/Schedule';
 
 export default function ScheduleScreen() {
-  return <PlaceholderScreen title="Schedule" />;
+  return <Schedule medications={todaysMedications} />;
 }
