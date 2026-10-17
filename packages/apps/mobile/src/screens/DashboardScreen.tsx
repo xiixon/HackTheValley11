@@ -5,8 +5,10 @@ import { GreetingHeader } from '../components/dashboard/GreetingHeader';
 import { MedicationList } from '../components/dashboard/MedicationList';
 import { useMedications } from '../context/MedicationContext';
 import { colors } from '../theme/colors';
+import { useAuth } from '../auth/AuthContext';
 
 export function DashboardScreen() {
+  const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const { medicationsByDate, toggleMedicationTaken } = useMedications();
   const today = new Date();
@@ -24,7 +26,7 @@ export function DashboardScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      <GreetingHeader name="Alexander" subtitle="You're doing amazing!" />
+      <GreetingHeader name={session?.user.firstName ?? ''} subtitle="You're doing amazing!" />
       <View style={styles.progressCard}>
         <View style={styles.progressCopy}>
           <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>

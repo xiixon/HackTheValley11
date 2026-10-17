@@ -1,5 +1,1 @@
-import { PlaceholderScreen } from '../screens/PlaceholderScreen';
-
-export default function ProfileScreen() {
-  return <PlaceholderScreen title="Profile" />;
-}
+export { ProfileScreen as default } from '../screens/ProfileScreen';
