@@ -2,6 +2,8 @@ import express from "express";
 import authRoutes from "../routes/auth";
 import schedulesRouter from "../routes/schedules";
 import { requireAuth } from "../middleware/auth.js";
+import { createChatRouter } from "../routes/chat";
+import { getChatContext } from "./services/chatContext";
 
 const app = express();
 
@@ -21,6 +23,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/schedules", requireAuth, schedulesRouter);
+app.use("/chat", requireAuth, createChatRouter({ getContext: getChatContext }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
