@@ -11,7 +11,7 @@ export function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const [medications, setMedications] = useState(todaysMedications);
   const takenCount = medications.filter(({ status }) => status === 'taken').length;
-  const completionPercentage = Math.round((takenCount / medications.length) * 100);
+  const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
   const markMedicationTaken = (id: string) => {
     setMedications((current) =>
