@@ -65,9 +65,17 @@ model User {
   pushTokens PushToken[]
 }
 
+enum Sex {
+  male
+  female
+  other
+}
+
 model Profile {
   userId   String   @id
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sex      Sex
+  birthDate DateTime  @db.Date
   weightKg Float
   heightCm Float
   healthConditions HealthCondition[]

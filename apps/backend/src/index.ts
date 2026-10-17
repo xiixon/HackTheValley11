@@ -1,11 +1,13 @@
 import express from "express";
 import authRoutes from "../routes/auth"
+import profileRoutes from "../routes/profile"
 import schedulesRouter from "../routes/schedules"
 import { requireAuth } from "../middleware/auth.js"
 
 const app = express();
 app.use(express.json());
 app.use("/auth", authRoutes);
+app.use("/profile", profileRoutes);
 app.use("/schedules", schedulesRouter);
 app.use("/schedules", requireAuth, schedulesRouter)
 
