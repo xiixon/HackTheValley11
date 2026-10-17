@@ -21,21 +21,21 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
         <Text style={styles.dosage}>{medication.dosage}</Text>
         <Text style={styles.time}>{medication.time}</Text>
       </View>
-      {isTaken ? (
-        <View style={styles.takenBadge}>
-          <Text style={styles.takenCheck}>✓</Text>
-          <Text style={styles.takenText}>Taken</Text>
-        </View>
-      ) : (
-        <Pressable
-          accessibilityLabel={`Mark ${medication.name} as taken`}
-          accessibilityRole="button"
-          onPress={() => onMarkTaken(medication.id)}
-          style={({ pressed }) => [styles.takeButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.takeButtonText}>Mark taken</Text>
-        </Pressable>
-      )}
+      <Pressable
+        accessibilityLabel={`${isTaken ? 'Undo taken status for' : 'Mark'} ${medication.name}`}
+        accessibilityRole="button"
+        accessibilityState={{ checked: isTaken }}
+        onPress={() => onMarkTaken(medication.id)}
+        style={({ pressed }) => [
+          isTaken ? styles.takenButton : styles.takeButton,
+          pressed && styles.pressed,
+        ]}
+      >
+        {isTaken && <Text style={styles.takenCheck}>✓</Text>}
+        <Text style={isTaken ? styles.takenText : styles.takeButtonText}>
+          {isTaken ? 'Taken' : 'Upcoming'}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -84,11 +84,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 8,
   },
-  takenBadge: {
+  takenButton: {
     alignItems: 'center',
     backgroundColor: colors.successSurface,
     borderRadius: 12,
     flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: 9,
     paddingVertical: 7,
   },
