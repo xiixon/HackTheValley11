@@ -23,7 +23,7 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   const dates = Array.from({ length: 5 }, (_, index) => {
-    const date = new Date();
+    const date = new Date(now);
     date.setDate(date.getDate() + index - 2);
     return date;
   });
@@ -43,6 +43,10 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
     day: "numeric",
   });
 
+  const untakenDoses = selectedMedications.filter(
+    (medication) => medication.status !== "taken",
+  ).length;
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -52,7 +56,7 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
       <View style={styles.hero}>
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>
-            {now.toLocaleDateString(undefined, {
+            {selectedDate.toLocaleDateString(undefined, {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -64,8 +68,8 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
           </Text>
         </View>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeNumber}>{selectedMedications.length}</Text>
-          <Text style={styles.heroBadgeLabel}>doses</Text>
+          <Text style={styles.heroBadgeNumber}>{untakenDoses}</Text>
+          <Text style={styles.heroBadgeLabel}>doses left</Text>
         </View>
       </View>
 
@@ -164,6 +168,7 @@ export function Schedule({ medicationsByDate }: ScheduleProps) {
             </View>
           );
         })}
+
         {selectedMedications.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateIcon}>✦</Text>
