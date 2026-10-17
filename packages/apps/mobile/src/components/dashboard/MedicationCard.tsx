@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 
 import { Medication } from '../../types/medication';
 import { colors } from '../../theme/colors';
+import { MedicationDetailsModal } from '../medications/MedicationDetailsModal';
 
 type MedicationCardProps = {
   medication: Medication;
@@ -10,6 +12,7 @@ type MedicationCardProps = {
 
 export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps) {
   const isTaken = medication.status === 'taken';
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
 
   return (
     <View style={styles.card}>
@@ -17,12 +20,12 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
         <Text style={styles.iconText}>✦</Text>
       </View>
       <View style={styles.details}>
-        <Text style={styles.name}>{medication.name}</Text>
+        <Text style={styles.name}>{medication.genericName}</Text>
         <Text style={styles.dosage}>{medication.dosage}</Text>
         <Text style={styles.time}>{medication.time}</Text>
       </View>
       <Pressable
-        accessibilityLabel={`${isTaken ? 'Undo taken status for' : 'Mark'} ${medication.name}`}
+        accessibilityLabel={`${isTaken ? 'Undo taken status for' : 'Mark'} ${medication.genericName}`}
         accessibilityRole="button"
         accessibilityState={{ checked: isTaken }}
         onPress={() => onMarkTaken(medication.id)}
@@ -36,6 +39,10 @@ export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps)
           {isTaken ? 'Taken' : 'Upcoming'}
         </Text>
       </Pressable>
+      <Pressable accessibilityLabel={`View details for ${medication.genericName}`} accessibilityRole="button" onPress={() => setIsDetailsVisible(true)}>
+        <Text style={styles.detailsLink}>Details</Text>
+      </Pressable>
+      <MedicationDetailsModal medication={isDetailsVisible ? medication : null} onClose={() => setIsDetailsVisible(false)} />
     </View>
   );
 }
@@ -120,5 +127,11 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
+  },
+  detailsLink: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    marginLeft: 8,
   },
 });

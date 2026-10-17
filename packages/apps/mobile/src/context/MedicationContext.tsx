@@ -1,11 +1,12 @@
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
 import { todaysMedications } from "../data/medications";
-import { Medication } from "../types/medication";
+import { Medication, MedicationFormValues } from "../types/medication";
 
 type MedicationContextValue = {
   medicationsByDate: Record<string, Medication[]>;
   toggleMedicationTaken: (id: string) => void;
+  addMedication: (date: Date, medication: MedicationFormValues) => void;
 };
 
 const MedicationContext = createContext<MedicationContextValue | undefined>(
@@ -50,8 +51,22 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addMedication = (date: Date, medication: MedicationFormValues) => {
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const scheduledMedication: Medication = {
+      ...medication,
+      status: "upcoming",
+      dosage: `${medication.doseAmount} ${medication.dosageForm}`,
+    };
+
+    setMedicationsByDate((current) => ({
+      ...current,
+      [dateKey]: [...(current[dateKey] ?? []), scheduledMedication],
+    }));
+  };
+
   const value = useMemo(
-    () => ({ medicationsByDate, toggleMedicationTaken }),
+    () => ({ medicationsByDate, toggleMedicationTaken, addMedication }),
     [medicationsByDate],
   );
 
