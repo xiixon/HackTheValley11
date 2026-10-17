@@ -1,33 +1,19 @@
-import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { todaysMedications } from '../data/medications';
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
 import { MedicationList } from '../components/dashboard/MedicationList';
+import { useMedications } from '../context/MedicationContext';
 import { colors } from '../theme/colors';
 
 export function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const [medications, setMedications] = useState(todaysMedications);
+  const { medicationsByDate, toggleMedicationTaken } = useMedications();
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const medications = medicationsByDate[todayKey] ?? [];
   const takenCount = medications.filter(({ status }) => status === 'taken').length;
   const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
-
-  const toggleMedicationTaken = (id: string) => {
-  setMedications((current) =>
-    current.map((medication) =>
-      medication.id === id
-        ? {
-            ...medication,
-            status:
-              medication.status === 'taken'
-                ? 'upcoming'
-                : 'taken',
-          }
-        : medication,
-    ),
-  );
-};
 
   return (
     <ScrollView

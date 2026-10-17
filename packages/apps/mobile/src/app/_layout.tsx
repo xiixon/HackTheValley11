@@ -3,6 +3,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { StatusBar } from 'expo-status-bar';
 
 import { colors } from '../theme/colors';
+import { MedicationProvider } from '../context/MedicationContext';
 
 const theme = {
   ...DefaultTheme,
@@ -18,18 +19,19 @@ const theme = {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider value={theme}>
-      <StatusBar style="dark" />
-      <NativeTabs
-        tintColor={colors.primary}
-        backgroundColor={colors.surface}
-        iconColor={{ default: colors.textMuted, selected: colors.primary }}
-        labelStyle={{
-          default: { color: colors.textMuted },
-          selected: { color: colors.primary },
-        }}
-        minimizeBehavior="never"
-      >
+    <MedicationProvider>
+      <ThemeProvider value={theme}>
+        <StatusBar style="dark" />
+        <NativeTabs
+          tintColor={colors.primary}
+          backgroundColor={colors.surface}
+          iconColor={{ default: colors.textMuted, selected: colors.primary }}
+          labelStyle={{
+            default: { color: colors.textMuted },
+            selected: { color: colors.primary },
+          }}
+          minimizeBehavior="never"
+        >
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
@@ -50,7 +52,8 @@ export default function RootLayout() {
           <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
         </NativeTabs.Trigger>
-      </NativeTabs>
-    </ThemeProvider>
+        </NativeTabs>
+      </ThemeProvider>
+    </MedicationProvider>
   );
 }
