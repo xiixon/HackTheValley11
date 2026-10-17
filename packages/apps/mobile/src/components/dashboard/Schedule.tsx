@@ -5,10 +5,18 @@ import { Medication } from "../../types/medication";
 import { colors } from "../../theme/colors";
 
 type ScheduleProps = {
-  medications: Medication[];
+  medicationsByDate: Record<string, Medication[]>;
 };
 
-export function Schedule({ medications }: ScheduleProps) {
+function getDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function Schedule({ medicationsByDate }: ScheduleProps) {
   const [now] = useState(() => new Date());
   const [selectedIndex, setSelectedIndex] = useState(2);
 
@@ -25,6 +33,14 @@ export function Schedule({ medications }: ScheduleProps) {
     const number = date.getDate();
 
     return `${label} ${number}`;
+  });
+  const selectedDate = dates[selectedIndex];
+  const selectedDateKey = getDateKey(selectedDate);
+  const selectedMedications = medicationsByDate[selectedDateKey] ?? [];
+  const selectedDateLabel = selectedDate.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
   });
 
   return (
@@ -48,21 +64,28 @@ export function Schedule({ medications }: ScheduleProps) {
           </Text>
         </View>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeNumber}>{medications.length}</Text>
+          <Text style={styles.heroBadgeNumber}>{selectedMedications.length}</Text>
           <Text style={styles.heroBadgeLabel}>doses</Text>
         </View>
       </View>
 
-      {/* TODO: Make these dates selectable and load the selected day's schedule. */}
       <View style={styles.dateRail}>
         {formattedDates.map((day, index) => {
           const [label, number] = day.split(" ");
           const isActive = index === selectedIndex;
 
           return (
-            <View
+            <Pressable
+              accessibilityLabel={`Select ${label} ${number}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
               key={day}
-              style={[styles.dateItem, isActive && styles.dateItemActive]}
+              onPress={() => setSelectedIndex(index)}
+              style={({ pressed }) => [
+                styles.dateItem,
+                isActive && styles.dateItemActive,
+                pressed && styles.dateItemPressed,
+              ]}
             >
               <Text
                 style={[styles.dateLabel, isActive && styles.dateLabelActive]}
@@ -75,15 +98,15 @@ export function Schedule({ medications }: ScheduleProps) {
                 {number}
               </Text>
               {isActive && <View style={styles.dateDot} />}
-            </View>
+            </Pressable>
           );
         })}
       </View>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Today&apos;s doses</Text>
-          <Text style={styles.sectionSubtitle}>Stay in your rhythm.</Text>
+          <Text style={styles.sectionTitle}>Scheduled doses</Text>
+          <Text style={styles.sectionSubtitle}>{selectedDateLabel}</Text>
         </View>
         {/* TODO: Connect this control to a calendar modal or date picker. */}
         <View style={styles.calendarButton}>
@@ -94,7 +117,7 @@ export function Schedule({ medications }: ScheduleProps) {
 
       {/* TODO: Add dose actions here when schedule editing and completion logic are ready. */}
       <View style={styles.doseList}>
-        {medications.map((medication) => {
+        {selectedMedications.map((medication) => {
           const isTaken = medication.status === "taken";
 
           return (
@@ -141,6 +164,16 @@ export function Schedule({ medications }: ScheduleProps) {
             </View>
           );
         })}
+        {selectedMedications.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateIcon}>✦</Text>
+            <Text style={styles.emptyStateTitle}>Nothing scheduled</Text>
+            <Text style={styles.emptyStateText}>
+              No medications have been added for this day yet.
+            </Text>
+            {/* TODO: Add an action to create a medication schedule for this date. */}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -225,6 +258,9 @@ const styles = StyleSheet.create({
   dateItemActive: {
     backgroundColor: colors.primary,
   },
+  dateItemPressed: {
+    opacity: 0.72,
+  },
   dateLabel: {
     color: colors.textMuted,
     fontSize: 10,
@@ -289,6 +325,32 @@ const styles = StyleSheet.create({
   },
   doseList: {
     paddingBottom: 12,
+  },
+  emptyState: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
+  },
+  emptyStateIcon: {
+    color: colors.accent,
+    fontSize: 24,
+  },
+  emptyStateTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
+    marginTop: 10,
+  },
+  emptyStateText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 6,
+    textAlign: "center",
   },
   timeColumn: {
     alignItems: "flex-end",
