@@ -17,6 +17,8 @@ export type Medication = SharedMedication & {
   endDate?: string;
   notes?: string;
   reminderTimes?: string[];
+  notificationOffsets?: number[];
+  notificationSound?: 'default' | 'silent';
   selectedWeekdays?: number[];
   intervalDays?: number;
 };
@@ -69,6 +71,8 @@ export type MedicationFormValues = Pick<
   endDate: string;
   notes: string;
   reminderTimes: string[];
+  notificationOffsets: number[];
+  notificationSound: 'default' | 'silent';
   selectedWeekdays: number[];
   intervalDays: number;
 };

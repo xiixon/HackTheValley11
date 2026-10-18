@@ -23,7 +23,7 @@ type BackendSchedule = {
   frequency: string;
   daysOfWeek: string[];
   intervalDays?: number | null;
-  metadata?: { color?: string; notes?: string; reminderTimes?: string[]; selectedWeekdays?: number[] } | null;
+  metadata?: { color?: string; notes?: string; reminderTimes?: string[]; selectedWeekdays?: number[]; notificationOffsets?: number[]; notificationSound?: 'default' | 'silent' } | null;
   doseLogs: { localDate: string; time: string; takenAt?: string | null }[];
 };
 
@@ -85,6 +85,8 @@ function mapMedication(schedule: BackendSchedule): MedicationFormValues {
     endDate: schedule.endDate ?? schedule.startDate,
     notes: schedule.metadata?.notes ?? "",
     reminderTimes: schedule.metadata?.reminderTimes?.map(time12) ?? schedule.times.map(time12),
+    notificationOffsets: schedule.metadata?.notificationOffsets ?? [0],
+    notificationSound: schedule.metadata?.notificationSound ?? "default",
     selectedWeekdays: schedule.metadata?.selectedWeekdays ?? schedule.daysOfWeek.map((day) => dayNames.indexOf(day)),
     intervalDays: schedule.intervalDays ?? 1,
   };
@@ -156,7 +158,14 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
     daysOfWeek: medication.selectedWeekdays.map((day) => dayNames[day]),
     intervalDays: medication.intervalDays,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    metadata: { color: medication.color, notes: medication.notes, reminderTimes: medication.reminderTimes, selectedWeekdays: medication.selectedWeekdays },
+    metadata: {
+      color: medication.color,
+      notes: medication.notes,
+      reminderTimes: medication.reminderTimes,
+      selectedWeekdays: medication.selectedWeekdays,
+      notificationOffsets: medication.notificationOffsets,
+      notificationSound: medication.notificationSound,
+    },
   });
   const addMedication = useCallback(async (date: Date, medication: MedicationFormValues) => {
     const response = await authenticatedFetch("/schedules", { method: "POST", body: JSON.stringify({ ...formPayload(date, medication), medication: { ...medication } }) });

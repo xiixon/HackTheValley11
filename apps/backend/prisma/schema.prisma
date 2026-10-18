@@ -137,9 +137,10 @@ model ReminderLog {
   schedule     Schedule @relation(fields: [scheduleId], references: [id])
   localDate     String
   time     String
+  offset     Int      @default(0)
   sentAt     DateTime @default(now())
 
-  @@unique([scheduleId, localDate, time])
+  @@unique([scheduleId, localDate, time, offset])
 }
 
 model DoseLog {

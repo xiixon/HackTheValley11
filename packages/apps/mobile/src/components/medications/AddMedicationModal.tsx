@@ -43,6 +43,8 @@ const initialValues: MedicationFormValues = {
   endDate: "",
   notes: "",
   reminderTimes: ["8:00 AM"],
+  notificationOffsets: [0],
+  notificationSound: "default",
   selectedWeekdays: [],
   intervalDays: 2,
 };
@@ -82,6 +84,8 @@ export function AddMedicationModal({
     String(medication?.ingredients[0]?.strength ?? 0),
   );
   const [isFrequencyOpen, setIsFrequencyOpen] = useState(false);
+  const [isNotificationOffsetOpen, setIsNotificationOffsetOpen] = useState(false);
+  const [isNotificationSoundOpen, setIsNotificationSoundOpen] = useState(false);
   const [newReminderTime, setNewReminderTime] = useState("");
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -119,6 +123,7 @@ export function AddMedicationModal({
     endDateValid &&
     (!needsWeekdays || values.selectedWeekdays.length > 0) &&
     (!needsInterval || values.intervalDays > 0) &&
+    values.notificationOffsets.length > 0 &&
     values.reminderTimes.every((time) => time.trim().length > 0);
 
   const submit = () => {
@@ -268,6 +273,50 @@ export function AddMedicationModal({
                 </Clickable>
               </View>
             </View>
+            <View style={styles.scheduleGroup}>
+              <Text style={styles.groupLabel}>Notification lead times</Text>
+              <Text style={styles.helperText}>Choose one or more reminders before each scheduled dose.</Text>
+              <Clickable accessibilityRole="button" accessibilityLabel="Choose notification lead times" onPress={() => setIsNotificationOffsetOpen((open) => !open)} style={styles.select}>
+                <Text style={styles.selectText}>
+                  {values.notificationOffsets.includes(0)
+                    ? "At dose time"
+                    : values.notificationOffsets.map((offset) => `${offset} min before`).join(", ") || "Choose lead times"}
+                </Text>
+                <Text style={styles.selectChevron}>{isNotificationOffsetOpen ? "▲" : "▼"}</Text>
+              </Clickable>
+              {isNotificationOffsetOpen && (
+                <View style={styles.options}>
+                  {[0, 1, 2, 5, 10, 15, 30, 60].map((offset) => {
+                    const selected = values.notificationOffsets.includes(offset);
+                    return (
+                      <Clickable key={offset} onPress={() => update("notificationOffsets", selected
+                        ? values.notificationOffsets.filter((item) => item !== offset)
+                        : [...values.notificationOffsets, offset].sort((a, b) => a - b))}
+                        style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+                        <Text style={styles.optionText}>{offset === 0 ? "At dose time" : `${offset} minutes before`} {selected ? "✓" : ""}</Text>
+                      </Clickable>
+                    );
+                  })}
+                </View>
+              )}
+              {values.notificationOffsets.length === 0 && <Text style={styles.validationText}>Choose at least one notification time.</Text>}
+              <View style={styles.soundField}>
+                <Text style={styles.fieldLabel}>Notification sound</Text>
+                <Clickable accessibilityRole="button" onPress={() => setIsNotificationSoundOpen((open) => !open)} style={styles.select}>
+                  <Text style={styles.selectText}>{values.notificationSound === "silent" ? "Silent" : "Default sound"}</Text>
+                  <Text style={styles.selectChevron}>{isNotificationSoundOpen ? "▲" : "▼"}</Text>
+                </Clickable>
+                {isNotificationSoundOpen && (
+                  <View style={styles.options}>
+                    {(["default", "silent"] as const).map((sound) => (
+                      <Clickable key={sound} onPress={() => { update("notificationSound", sound); setIsNotificationSoundOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+                        <Text style={styles.optionText}>{sound === "silent" ? "Silent" : "Default sound"}</Text>
+                      </Clickable>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
             {!startDateValid && values.startDate.length > 0 && (
               <Text style={styles.validationText}>Use a date in YYYY-MM-DD format.</Text>
             )}
@@ -342,6 +391,8 @@ function getFormValues(medication: Medication): MedicationFormValues {
     reminderTimes: medication.reminderTimes ?? [medication.time],
     selectedWeekdays: medication.selectedWeekdays ?? [],
     intervalDays: medication.intervalDays ?? 2,
+    notificationOffsets: medication.notificationOffsets ?? [0],
+    notificationSound: medication.notificationSound ?? "default",
   };
 }
 
@@ -416,6 +467,8 @@ const styles = StyleSheet.create({
   addTimeText: { color: colors.background, fontSize: 24, fontWeight: "700" },
   validationText: { color: colors.primary, fontSize: 11, marginBottom: 8 },
   groupLabel: { color: colors.text, fontSize: 12, fontWeight: "800", marginBottom: 8 },
+  helperText: { color: colors.textMuted, fontSize: 11, marginBottom: 8 },
+  soundField: { marginTop: 10 },
   saveButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 14, minHeight: 50, justifyContent: "center", marginTop: 8 },
   saveButtonDisabled: { opacity: 0.45 },
   saveButtonText: { color: colors.background, fontSize: 15, fontWeight: "800" },

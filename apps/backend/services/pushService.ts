@@ -4,7 +4,16 @@ import { prisma } from "../src/db/prisma";
 const expo = new Expo();
 
 // Send a push notification through Expo
-export async function sendReminder(userId: string, scheduleId: string, medicationId: string) {
+export async function sendReminder(
+  userId: string,
+  schedule: { id: string; medicationId: string; medication: { genericName: string; brandName: string }; metadata?: unknown },
+  localDate: string,
+  time: string,
+  offset: number,
+) {
+  const metadata = schedule.metadata && typeof schedule.metadata === "object" && !Array.isArray(schedule.metadata)
+    ? schedule.metadata as { notificationSound?: string }
+    : {};
   const rows = await prisma.pushToken.findMany({ where: { userId } }); // Fetch all user's tokens so that notifactions are sent to all devices
   const tokens = rows.map((r) => r.token).filter((t) => Expo.isExpoPushToken(t)); // Reject any invalid tokens with improper format
   if (tokens.length === 0) return;
@@ -12,9 +21,11 @@ export async function sendReminder(userId: string, scheduleId: string, medicatio
   // Create the notification messages content
   const messages: ExpoPushMessage[] = tokens.map((to) => ({
     to,
-    title: "Medication reminder",
-    body: "Time to take your medication.",   // generic on purpose
-    data: { scheduleId, medicationId },
+    title: `${schedule.medication.brandName || schedule.medication.genericName} reminder`,
+    body: offset ? `Take your medication in ${offset} minute${offset === 1 ? "" : "s"}.` : "It is time to take your medication.",
+    ...(metadata.notificationSound !== "silent" ? { sound: "default" } : {}),
+    categoryId: "medication-reminder",
+    data: { scheduleId: schedule.id, medicationId: schedule.medicationId, localDate, time, offset },
   }));
 
   // Limit the number of messages sent at once

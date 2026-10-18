@@ -24,7 +24,19 @@ function localParts(now: Date, timeZone: string) {
   };
 }
 
-export type DueReminder = { schedule: ScheduleRow; localDate: string; time: string };
+export type DueReminder = { schedule: ScheduleRow; localDate: string; time: string; offset: number };
+
+function shiftDate(date: string, days: number) {
+  const shifted = new Date(`${date}T12:00:00Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
+function isScheduledOnDate(schedule: ScheduleRow, date: string) {
+  if (date < schedule.startDate || (schedule.endDate && date > schedule.endDate)) return false;
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)).toLowerCase();
+  return schedule.frequency !== "weekly" || schedule.daysOfWeek.includes(weekday);
+}
 
 // A series of "skip it iff" checks to see if a schedule is due at the current time.
 export function findDue(schedules: ScheduleRow[], now = new Date()): DueReminder[] {
@@ -38,12 +50,32 @@ export function findDue(schedules: ScheduleRow[], now = new Date()): DueReminder
       continue; // bad timezone in the database
     }
 
-    if (p.date < s.startDate) continue;                        // hasn't started
-    if (s.endDate && p.date > s.endDate) continue;             // already ended
-    if (s.frequency === "weekly" && !s.daysOfWeek.includes(p.weekday)) continue;
-    if (!s.times.includes(p.time)) continue;                   // not due this minute
+    const metadata = s.metadata && typeof s.metadata === "object" && !Array.isArray(s.metadata)
+      ? s.metadata as { notificationOffsets?: unknown }
+      : {};
+    const offsets = Array.isArray(metadata.notificationOffsets) && metadata.notificationOffsets.length
+      ? metadata.notificationOffsets.filter((offset): offset is number => Number.isInteger(offset))
+      : [0];
 
-    due.push({ schedule: s, localDate: p.date, time: p.time });
+    for (const doseDate of [p.date, shiftDate(p.date, -1)]) {
+      if (!isScheduledOnDate(s, doseDate)) continue;
+      for (const time of s.times) {
+        const timeParts = time.split(":").map(Number);
+        const hour = timeParts[0];
+        const minute = timeParts[1];
+        if (hour === undefined || minute === undefined || !Number.isInteger(hour) || !Number.isInteger(minute)) continue;
+        const doseMinute = hour * 60 + minute;
+        for (const offset of offsets) {
+          const reminderMinute = doseMinute - offset;
+          const reminderDate = shiftDate(doseDate, reminderMinute < 0 ? -1 : 0);
+          const normalizedMinute = (reminderMinute + 1440) % 1440;
+          const reminderTime = `${String(Math.floor(normalizedMinute / 60)).padStart(2, "0")}:${String(normalizedMinute % 60).padStart(2, "0")}`;
+          if (reminderDate === p.date && reminderTime === p.time) {
+            due.push({ schedule: s, localDate: doseDate, time, offset });
+          }
+        }
+      }
+    }
   }
 
   return due;

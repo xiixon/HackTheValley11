@@ -19,6 +19,21 @@ function isValidTimezone(tz: unknown): boolean {
 export function validateScheduleInput(input: Record<string, any>): string[] {
   const errors: string[] = [];
 
+  const metadata = input.metadata;
+  if (metadata != null && (typeof metadata !== "object" || Array.isArray(metadata))) {
+    errors.push("metadata must be an object");
+  } else if (metadata?.notificationOffsets != null &&
+      (!Array.isArray(metadata.notificationOffsets) ||
+        metadata.notificationOffsets.length === 0 ||
+        !metadata.notificationOffsets.every((offset: unknown) =>
+          Number.isInteger(offset) && [0, 1, 2, 5, 10, 15, 30, 60].includes(offset as number)))) {
+    errors.push("metadata.notificationOffsets must contain one or more supported minute offsets");
+  }
+  if (metadata?.notificationSound != null &&
+      !["default", "silent"].includes(metadata.notificationSound)) {
+    errors.push("metadata.notificationSound must be default or silent");
+  }
+
   // times: check the type first, then use your validator
   if (!Array.isArray(input.times) || !input.times.every((t: unknown) => typeof t === "string")) {
     errors.push("times must be an array of HH:mm strings");
