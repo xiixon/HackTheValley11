@@ -1,3 +1,4 @@
+import { classifyCanadianMedicine } from '../../../../../shared/src/canadianClassification';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthContext';
@@ -58,6 +59,7 @@ export function MedicineCatalogPicker({ visible, onSelect }: Props) {
               <View style={styles.copy}>
                 <Text style={styles.name}>{medicine.brandName || medicine.genericName}</Text>
                 <Text style={styles.generic}>{medicine.genericName}</Text>
+                <Text style={styles.ingredients}>{classifyCanadianMedicine(medicine).label}</Text>
                 <Text style={styles.ingredients}>{medicine.ingredients.map((ingredient) => `${ingredient.name} ${ingredient.strengthMg} mg`).join(' · ')} · {medicine.dosageForm}</Text>
               </View>
               <Text style={styles.arrow}>＋</Text>

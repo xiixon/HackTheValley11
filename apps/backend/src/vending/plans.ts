@@ -1,6 +1,12 @@
+import { canadianFormulations, classifyCanadianMedicine, matchingCanadianFormulation, naturalHealthCategory, type ClassificationMedicine } from '../../../../packages/shared/src/canadianClassification';
 import type { VendingDose, VendingPlan, VendingProduct, VendingItem, VendingEligibility, PharmacistReferral } from '../../../../packages/shared/src/types/Vending';
 
 export const catalog: VendingProduct[] = [
+  ...canadianFormulations.filter(rule => rule.status === 'non_prescription').map(rule => ({
+    id: rule.productId!, name: `${rule.ingredient === 'acetylsalicylic acid' ? 'Aspirin (ASA)' : rule.ingredient} ${rule.strengthMg} mg`,
+    detail: `${rule.strengthMg} mg · pack of 20 tablets`, category: rule.ingredient.includes('tirizine') || rule.ingredient === 'loratadine' ? 'Allergy relief' : 'Pain relief',
+    priceCents: rule.priceCents!, color: 'blue',
+  })),
   { id: 'vitamin-d', name: 'Vitamin D3', detail: '1,000 IU · pack of 30 capsules', category: 'Vitamins', priceCents: 899, color: 'pink' },
   { id: 'vitamin-c', name: 'Vitamin C', detail: '500 mg · pack of 30 tablets', category: 'Vitamins', priceCents: 649, color: 'yellow' },
   { id: 'electrolytes', name: 'Electrolytes', detail: 'Pack · 6 sachets', category: 'Everyday care', priceCents: 599, color: 'blue' },
@@ -22,10 +28,32 @@ export const pharmacistReferral: PharmacistReferral = {
   message: 'Please seek a licensed pharmacist for prescription medicines and items this machine cannot supply.',
   mock: true,
 };
-export function dispensingEligibility(dose: Pick<VendingDose, 'name' | 'dosage'>): VendingEligibility {
-  const stock = scheduleStock.find((item) => item.names.includes(dose.name.trim().toLowerCase()) && item.dosage.test(dose.dosage.trim()));
-  return stock ? { eligible: true, productId: stock.productId, message: 'Over-the-counter · available at this station' }
-    : { eligible: false, message: 'Seek a licensed pharmacist · prescription or unavailable formulation' };
+export function dispensingEligibility(dose: Pick<VendingDose, 'name' | 'dosage'>, medicine?: ClassificationMedicine): VendingEligibility {
+  const parsed = dose.dosage.trim().match(/^(\d+(?:\.\d+)?)\s*mg\s*[·•]\s*(\d+(?:\.\d+)?)\s+(tablet|capsule)s?$/i);
+  const formulation = medicine ?? { genericName: dose.name, dosageForm: parsed?.[3]?.toLowerCase() ?? '',
+    ingredients: parsed ? [{ name: dose.name, strengthMg: Number(parsed[1]) }] : [] };
+  const classification = classifyCanadianMedicine(formulation);
+  const rule = matchingCanadianFormulation(formulation);
+  if (rule?.status === 'non_prescription' && parsed && Number(parsed[2]) === 1 && rule.productId) {
+    // The snapshot must agree with the verified record, including strength and form.
+    const snapshotRule = matchingCanadianFormulation({ genericName: dose.name, dosageForm: parsed[3]!.toLowerCase(), ingredients: [{ name: dose.name, strengthMg: Number(parsed[1]) }] });
+    if (snapshotRule?.id === rule.id) return { eligible: true, productId: rule.productId, message: 'Non-prescription · available at this station', classification };
+  }
+  const namedStock = scheduleStock.find(item => item.names.includes(dose.name.trim().toLowerCase()));
+  const stock = namedStock?.dosage.test(dose.dosage.trim()) ? namedStock : undefined;
+  // Keep the existing vitamin/mineral stock, classified separately from pharmaceutical drugs.
+  const actualIngredient = medicine?.ingredients[0];
+  const matchesNaturalHealthRecord = !!medicine && !!parsed && medicine.ingredients.length === 1 &&
+    namedStock?.names.includes(medicine.genericName.trim().toLowerCase()) &&
+    namedStock.names.includes(actualIngredient!.name.trim().toLowerCase()) &&
+    medicine.dosageForm === parsed[3]!.toLowerCase() &&
+    (actualIngredient!.strengthMg ?? actualIngredient!.strength) === Number(parsed[1]);
+  if (stock && (!medicine || matchesNaturalHealthRecord)) return { eligible: true, productId: stock.productId, message: 'Natural health product · available at this station', classification: naturalHealthCategory() };
+  return { eligible: false, classification, message: classification.status === 'prescription'
+    ? 'Prescription required. See a licensed pharmacist.'
+    : classification.status === 'non_prescription'
+      ? 'Non-prescription, but this formulation or quantity is not stocked.'
+      : 'Canadian status not verified for this formulation. Ask a licensed pharmacist.' };
 }
 export function assertDispensablePlan(plan: VendingPlan) {
   if (!plan.items.length || plan.items.some((item) => {
@@ -45,14 +73,14 @@ export function addDays(date: string, amount: number) {
   value.setUTCDate(value.getUTCDate() + amount);
   return value.toISOString().slice(0, 10);
 }
-export function schedulePlan(schedule: VendingDose[], startDate: string, days: number): VendingPlan {
+export function schedulePlan(schedule: VendingDose[], startDate: string, days: number, eligibilityForDose: (dose: VendingDose) => VendingEligibility = dispensingEligibility): VendingPlan {
   const endDate = addDays(startDate, days - 1);
   const groups = new Map<string, VendingItem>();
   const referred = new Map<string, VendingItem>();
   for (const dose of schedule) {
     if (dose.date < startDate || dose.date > endDate || dose.status === 'taken' || /as needed/i.test(dose.time)) continue;
     const key = `${dose.name}\u0000${dose.dosage}`;
-    const eligibility = dispensingEligibility(dose);
+    const eligibility = eligibilityForDose(dose);
     const target = eligibility.eligible ? groups : referred;
     const item = target.get(key) ?? { id: dose.id, name: dose.name, description: dose.dosage, doses: 0, ...(eligibility.productId ? { productId: eligibility.productId } : {}) };
     item.doses++;

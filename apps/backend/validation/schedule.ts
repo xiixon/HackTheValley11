@@ -2,6 +2,7 @@ import {
   hasValidDateRange,
   hasValidTimes,
 } from "../../../packages/shared/src/types/Schedule.js";
+import { shiftDate } from '../../../packages/shared/src/reminders';
 
 const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const FREQUENCIES = ["daily", "weekly", "selected_days", "every_n_days", "monthly", "once", "as_needed", "once_daily"];
@@ -64,6 +65,16 @@ export function validateScheduleInput(input: Record<string, any>): string[] {
     } else {
       if (["weekly", "selected_days"].includes(input.frequency) && days.length === 0) {
         errors.push("weekly and selected-day schedules need at least one day");
+      }
+      if (["weekly", "selected_days"].includes(input.frequency) && days.length &&
+          typeof input.startDate === 'string' && typeof input.endDate === 'string' && hasValidDateRange(input.startDate, input.endDate)) {
+        let hasDose = false;
+        for (let offset = 0; offset < 7; offset++) {
+          const date = shiftDate(input.startDate, offset);
+          if (date > input.endDate) break;
+          if (days.includes(DAYS[new Date(`${date}T12:00:00Z`).getUTCDay()])) hasDose = true;
+        }
+        if (!hasDose) errors.push('No selected weekday falls within these dates. Extend the end date or choose a weekday in the date range.');
       }
       if (!["weekly", "selected_days"].includes(input.frequency) && days.length > 0) {
         errors.push("this frequency must not include daysOfWeek");

@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../src/db/prisma";
 
+import { classifyCanadianMedicine } from '../../../packages/shared/src/canadianClassification';
+
 const DOSAGE_FORMS = ["tablet", "capsule", "powder", "liquid", "cream", "inhaler"] as const;
 
 const listQuerySchema = z.object({
@@ -45,7 +47,7 @@ export const listMedications = async (req: Request, res: Response) => {
       }),
       prisma.medication.count({ where }),
     ]);
-    return res.json({ medications, total, limit, offset });
+    return res.json({ medications: medications.map(medication => ({ ...medication, canadianClassification: classifyCanadianMedicine(medication) })), total, limit, offset });
   } catch (error) {
     console.error("List medications error:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -66,7 +68,7 @@ export const getMedication = async (req: Request, res: Response) => {
     if (!medication) {
       return res.status(404).json({ error: "Medication not found" });
     }
-    return res.json({ medication });
+    return res.json({ medication: { ...medication, canadianClassification: classifyCanadianMedicine(medication) } });
   } catch (error) {
     console.error("Get medication error:", error);
     return res.status(500).json({ error: "Internal server error" });

@@ -1,3 +1,4 @@
+import type { CanadianClassification } from '../canadianClassification';
 export type VendingDose = {
   id: string; date: string; time: string; name: string; dosage: string;
   status: 'upcoming' | 'taken';
@@ -14,5 +15,5 @@ export type VendingOrder = {
 };
 export type VendingPass = { code: string; qrValue: string; syncedAt: string; doseCount: number };
 
-export type VendingEligibility = { eligible: boolean; productId?: string; message: string };
+export type VendingEligibility = { eligible: boolean; productId?: string; message: string; classification?: CanadianClassification };
 export type PharmacistReferral = { name: string; area: string; message: string; mock: true };

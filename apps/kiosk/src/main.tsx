@@ -181,6 +181,7 @@ function App() {
   const [data, setData] = useState<KioskData | null>(null);
   const [tab, setTab] = useState<"schedule" | "shop" | "dispense">("schedule");
   const [startDate, setStartDate] = useState("");
+  const [scheduleDate, setScheduleDate] = useState("");
   const [days, setDays] = useState(7);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [order, setOrder] = useState<VendingOrder | null>(null);
@@ -205,6 +206,7 @@ function App() {
     setCamera(false);
     setKeypad(false);
     setStartDate("");
+    setScheduleDate("");
     setDays(7);
   }
   useEffect(() => {
@@ -255,6 +257,7 @@ function App() {
     if (version !== sessionVersion.current) return;
     setData(result);
     setStartDate((value) => value || result.today);
+    setScheduleDate((value) => value || result.today);
   }
   async function login(value: string) {
     if (busy) return;
@@ -325,8 +328,21 @@ function App() {
       (sum, item) => sum + item.priceCents * (cart[item.id] || 0),
       0,
     ) || 0;
-  const selectedDoses =
-    data?.schedule.filter((dose) => dose.date === data.today) || [];
+  const viewedDate = scheduleDate || data?.today || "";
+  const selectedDoses = data?.schedule.filter((dose) => dose.date === viewedDate) || [];
+  const nextScheduledDate = data?.schedule.filter(dose => dose.date > viewedDate).map(dose => dose.date).sort()[0];
+  const pickupEnd = new Date(`${startDate}T12:00:00Z`);
+  pickupEnd.setUTCDate(pickupEnd.getUTCDate() + days - 1);
+  const pickupEndDate = Number.isNaN(pickupEnd.getTime()) ? "" : pickupEnd.toISOString().slice(0, 10);
+  const pickupDoses = data?.schedule.filter(dose => dose.date >= startDate && dose.date <= pickupEndDate && dose.status !== "taken" && !/as needed/i.test(dose.time)) || [];
+  const pickupGroups = [...pickupDoses.reduce((groups, dose) => {
+    const key = `${dose.name}\u0000${dose.dosage}`;
+    const existing = groups.get(key);
+    if (existing) existing.count++;
+    else groups.set(key, { name: dose.name, dosage: dose.dosage, dispensing: dose.dispensing, count: 1 });
+    return groups;
+  }, new Map<string, { name: string; dosage: string; dispensing: VendingEligibility; count: number }>()).entries()];
+  const readyCount = pickupDoses.filter(dose => dose.dispensing.eligible).length;
   const theme = {
     "--blue": colors.primary,
     "--cream": colors.background,
@@ -390,6 +406,10 @@ function App() {
             {tab === "schedule" && (
               <>
                 <div className="schedule-controls">
+                  <label className="schedule-date" htmlFor="schedule-date">
+                    Schedule date
+                    <input id="schedule-date" type="date" min={data?.today} value={viewedDate} onChange={event => setScheduleDate(event.target.value)} />
+                  </label>
                   <div className="schedule-actions">
                     <button
                       className="secondary"
@@ -406,7 +426,7 @@ function App() {
                     <button
                       className="primary"
                       disabled={busy}
-                      onClick={() => setTab("dispense")}
+                      onClick={() => { setStartDate(viewedDate); setTab("dispense"); }}
                     >
                       Pick up medicines
                     </button>
@@ -433,8 +453,9 @@ function App() {
                               ? "Past dose"
                               : dose.dispensing.eligible
                                 ? "Available for pickup"
-                                : "See a pharmacist"}
+                                : dose.dispensing.message}
                         </p>
+                        {dose.dispensing.classification?.sourceUrl && <a className="classification-source" href={dose.dispensing.classification.sourceUrl} target="_blank" rel="noreferrer">Health Canada classification ↗</a>}
                       </div>
                     </article>
                   ))}
@@ -442,9 +463,11 @@ function App() {
                 {!selectedDoses.length && (
                   <div className="empty-state">
                     <p>
-                      No medications for this date. Refresh your schedule in the
-                      mobile app.
+                      No doses scheduled for {niceDate(viewedDate)}.
                     </p>
+                    {nextScheduledDate ? <button className="secondary" onClick={() => setScheduleDate(nextScheduledDate)}>
+                      View next doses · {niceDate(nextScheduledDate)}
+                    </button> : <p>Check the dates and selected weekdays in your app, then refresh your schedule.</p>}
                   </div>
                 )}
               </>
@@ -559,6 +582,19 @@ function App() {
                     <p className="option-note">
                       Only available over-the-counter doses are included.
                     </p>
+                    <div className="pickup-summary" aria-live="polite">
+                      {pickupGroups.length ? <>
+                        <p className="pickup-count">{readyCount} {readyCount === 1 ? "dose available" : "doses available"} for pickup</p>
+                        {pickupGroups.map(([key, item]) => <div className="pickup-line" key={key}>
+                          <strong>{item.name}</strong>
+                          <span>{item.dosage} · {item.count} {item.count === 1 ? "dose" : "doses"}</span>
+                          <span className={`eligibility ${item.dispensing.eligible ? "otc" : "referral"}`}>
+                            {item.dispensing.eligible ? "Available for pickup" : item.dispensing.message}
+                          </span>
+                          {item.dispensing.classification?.sourceUrl && <a className="classification-source" href={item.dispensing.classification.sourceUrl} target="_blank" rel="noreferrer">Health Canada classification ↗</a>}
+                        </div>)}
+                      </> : <p>No untaken scheduled doses in this date range. Choose the dates shown in your app. As-needed medicines are not included in scheduled pickup.</p>}
+                    </div>
                     <button
                       className="primary wide"
                       disabled={
@@ -566,7 +602,8 @@ function App() {
                         !startDate ||
                         !Number.isInteger(days) ||
                         days < 1 ||
-                        days > 30
+                        days > 30 ||
+                        readyCount === 0
                       }
                       onClick={() => void review("schedule")}
                     >

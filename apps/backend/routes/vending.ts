@@ -19,6 +19,13 @@ const syncSchema = z.object({ schedule: z.array(doseSchema).max(3000), timezone:
   try { new Intl.DateTimeFormat('en', { timeZone: value }).format(); return true; } catch { return false; }
 }) });
 const sessions = new Map<string, { userId: string; expires: number }>();
+async function classifiedSchedule(userId: string, doses: VendingDose[]) {
+  const schedules = await prisma.schedule.findMany({ where: { userId, isActive: true }, include: { medication: { include: { ingredients: true } } } });
+  const medicineBySchedule = new Map(schedules.map(schedule => [schedule.id, schedule.medication]));
+  return doses.filter(dose => !dose.id.includes('|') || medicineBySchedule.has(dose.id.split('|')[0]!)).map(dose => ({
+    ...dose, dispensing: dispensingEligibility(dose, medicineBySchedule.get(dose.id.split('|')[0]!)),
+  }));
+}
 function requireKiosk(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   const token = header?.startsWith('Kiosk ') ? header.slice(6) : '';
@@ -59,11 +66,11 @@ router.delete('/session', (req, res) => {
 });
 router.get('/kiosk', requireKiosk, async (req, res) => {
   const pass = await prisma.vendingPass.findUniqueOrThrow({ where: { userId: req.userId! } });
-  return res.json({ schedule: (pass.schedule as VendingDose[]).map((dose) => ({ ...dose, dispensing: dispensingEligibility(dose) })), pharmacistReferral, syncedAt: pass.syncedAt, timezone: pass.timezone, today: localDate(pass.timezone), catalog, hardware: await hardwareStatus() });
+  return res.json({ schedule: await classifiedSchedule(req.userId!, pass.schedule as VendingDose[]), pharmacistReferral, syncedAt: pass.syncedAt, timezone: pass.timezone, today: localDate(pass.timezone), catalog, hardware: await hardwareStatus() });
 });
 const previewSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('schedule'), startDate: date, days: z.number().int().min(1).max(30) }),
-  z.object({ kind: z.literal('purchase'), cart: z.array(z.object({ productId: z.string(), quantity: z.number().int().min(1).max(10) })).min(1).max(6) }),
+  z.object({ kind: z.literal('purchase'), cart: z.array(z.object({ productId: z.string(), quantity: z.number().int().min(1).max(10) })).min(1).max(catalog.length) }),
 ]);
 router.post('/orders', requireKiosk, async (req, res) => {
   const parsed = previewSchema.safeParse(req.body);
@@ -73,8 +80,10 @@ router.post('/orders', requireKiosk, async (req, res) => {
     if (parsed.data.kind === 'schedule' && (parsed.data.startDate < localDate(pass.timezone) || parsed.data.startDate > addDays(localDate(pass.timezone), 365))) {
       return res.status(400).json({ error: 'Choose a start date from today through the next year.' });
     }
+    const classified = parsed.data.kind === 'schedule' ? await classifiedSchedule(req.userId!, pass.schedule as VendingDose[]) : [];
+    const eligibility = new Map(classified.map(dose => [dose.id, dose.dispensing]));
     const plan = parsed.data.kind === 'schedule'
-      ? schedulePlan(pass.schedule as VendingDose[], parsed.data.startDate, parsed.data.days)
+      ? schedulePlan(classified, parsed.data.startDate, parsed.data.days, dose => eligibility.get(dose.id)!)
       : purchasePlan(parsed.data.cart);
     if (!plan.items.length) return res.status(400).json({ error: plan.referrals.length ? 'No stocked over-the-counter doses in this range. Please seek a licensed pharmacist for the medicines shown below.' : 'No unlogged scheduled doses in this date range. Sync your schedule from the Vending tab or choose another range.', referrals: plan.referrals, pharmacistReferral });
     assertDispensablePlan(plan);
