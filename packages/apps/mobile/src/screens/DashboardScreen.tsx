@@ -4,19 +4,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
 import { MedicationList } from '../components/dashboard/MedicationList';
 import { useMedications } from '../context/MedicationContext';
+import { getMedicationDisplayStatus, Medication } from '../types/medication';
+import { AddMedicationModal } from '../components/medications/AddMedicationModal';
+import { useState } from 'react';
 import { colors } from '../theme/colors';
-import { PillBackground } from '../components/PillBackground';
-import { typography } from '../theme/typography';
+import { typography } from "../theme/typography";
+import { PillBackground } from "../components/PillBackground";
 import { useAuth } from '../auth/AuthContext';
 
 export function DashboardScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-  const { medicationsByDate, toggleMedicationTaken } = useMedications();
+  const { medicationsByDate, cycleMedicationStatus } = useMedications();
+  const { updateMedication } = useMedications();
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const medications = medicationsByDate[todayKey] ?? [];
-  const takenCount = medications.filter(({ status }) => status === 'taken').length;
+  const takenCount = medications.filter((medication) => getMedicationDisplayStatus(medication) === 'taken').length;
+  const missedCount = medications.filter((medication) => getMedicationDisplayStatus(medication) === 'missed').length;
   const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
   return (
@@ -34,10 +40,15 @@ export function DashboardScreen() {
           <View style={styles.progressCopy}>
             <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
             <Text style={styles.progressTitle}>
-              {takenCount === medications.length ? 'All done for today!' : "You're doing great"}
+              {missedCount > 0
+                ? 'Review missed doses'
+                : takenCount === medications.length
+                  ? 'All done for today!'
+                  : "You're doing great"}
             </Text>
             <Text style={styles.progressSubtitle}>
-              {takenCount} of {medications.length} doses logged
+              {takenCount} of {medications.length} doses taken
+              {missedCount > 0 ? ` · ${missedCount} missed` : ''}
             </Text>
             <View
               accessibilityLabel={`${completionPercentage}% of today's medications completed`}
@@ -52,9 +63,33 @@ export function DashboardScreen() {
             <Text style={styles.progressCircleLabel}>complete</Text>
           </View>
         </View>
-        <MedicationList medications={medications} onMarkTaken={toggleMedicationTaken} />
+        {missedCount > 0 && (
+          <View style={styles.missedBanner} accessibilityRole="alert">
+            <Text style={styles.missedBannerTitle}>
+              {missedCount} missed {missedCount === 1 ? 'dose' : 'doses'}
+            </Text>
+            <Text style={styles.missedBannerText}>
+              Review your schedule and follow your care plan before making changes.
+            </Text>
+          </View>
+        )}
+        <MedicationList
+          medications={medications}
+          onCycleMedicationStatus={cycleMedicationStatus}
+          onEditMedication={setEditingMedication}
+        />
+        <AddMedicationModal
+          key={editingMedication?.id ?? "new-medication"}
+          date={today}
+          medication={editingMedication}
+          onClose={() => setEditingMedication(null)}
+          onSubmit={(updated) => {
+            if (editingMedication) updateMedication(editingMedication.id, updated);
+          }}
+          visible={editingMedication !== null}
+        />
         <View style={styles.note}>
-          <Text style={styles.noteIcon}>✦</Text>
+          <Text style={styles.noteIcon}>✚</Text>
           <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
         </View>
       </ScrollView>
@@ -146,5 +181,23 @@ const styles = StyleSheet.create({
   noteText: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+  missedBanner: {
+    backgroundColor: colors.accent,
+    borderRadius: 18,
+    marginBottom: 18,
+    padding: 16,
+  },
+  missedBannerTitle: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  missedBannerText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 18,
+    marginTop: 4,
   },
 });

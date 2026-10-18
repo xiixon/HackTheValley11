@@ -26,6 +26,7 @@ function localParts(now: Date, timeZone: string) {
 
 export type DueReminder = { schedule: ScheduleRow; localDate: string; time: string };
 
+// A series of "skip it iff" checks to see if a schedule is due at the current time.
 export function findDue(schedules: ScheduleRow[], now = new Date()): DueReminder[] {
   const due: DueReminder[] = [];
 
@@ -34,7 +35,7 @@ export function findDue(schedules: ScheduleRow[], now = new Date()): DueReminder
     try {
       p = localParts(now, s.timezone);
     } catch {
-      continue; // bad timezone in the database: skip instead of crashing the job
+      continue; // bad timezone in the database
     }
 
     if (p.date < s.startDate) continue;                        // hasn't started
