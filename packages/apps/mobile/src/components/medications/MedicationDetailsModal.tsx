@@ -2,6 +2,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 
 import { Medication } from "../../types/medication";
 import { colors } from "../../theme/colors";
+import { typography } from '../../theme/typography';
 
 type MedicationDetailsModalProps = {
   medication: Medication | null;
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   header: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between", paddingTop: 24 },
   headerCopy: { flex: 1 },
   kicker: { color: colors.primary, fontSize: 10, fontWeight: "800", letterSpacing: 1.3 },
-  title: { color: colors.text, fontSize: 30, fontWeight: "800", marginTop: 8 },
+  title: { ...typography.heading, color: colors.text, fontSize: 30, marginTop: 8 },
   brand: { color: colors.textMuted, fontSize: 15, marginTop: 4 },
   closeButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   closeText: { color: colors.primary, fontSize: 25, lineHeight: 28 },
@@ -93,6 +94,6 @@ const styles = StyleSheet.create({
   detailLabel: { color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
   detailValue: { color: colors.background, fontSize: 14, fontWeight: "700", marginTop: 6 },
   section: { borderBottomColor: colors.border, borderBottomWidth: 1, paddingVertical: 18 },
-  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: "800" },
+  sectionTitle: { ...typography.heading, color: colors.text, fontSize: 16 },
   sectionValue: { color: colors.textMuted, fontSize: 14, lineHeight: 21, marginTop: 6 },
 });

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { prisma } from "../src/db/prisma";
 import { requireAuth } from ".././middleware/auth";
+import { registrationProfileSchema } from "../validation/profile";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ const registerSchema = z
     email: z.email().optional(),
     phone: z.string().min(7).optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
+    profile: registrationProfileSchema.optional(),
   })
   .refine((d) => d.email || d.phone, {
     message: "Provide an email or a phone number",
@@ -38,7 +40,7 @@ router.post("/register", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: z.treeifyError(parsed.error) });
   }
-  const { firstName, lastName, email, phone, password } = parsed.data;
+  const { firstName, lastName, email, phone, password, profile } = parsed.data;
 
   try {
     const existing = await prisma.user.findFirst({
@@ -61,6 +63,16 @@ router.post("/register", async (req, res) => {
         passwordHash,
         ...(email ? { email } : {}),
         ...(phone ? { phone } : {}),
+        ...(profile ? { profile: { create: {
+          weightKg: profile.weightKg,
+          heightCm: profile.heightCm,
+          sex: profile.sex,
+          birthDate: new Date(`${profile.birthDate}T00:00:00.000Z`),
+          allergies: profile.allergies ?? [],
+          healthConditions: { create: (profile.healthConditions ?? []).map((condition) => ({
+            name: condition.name, notes: condition.notes ?? null,
+          })) },
+        } } } : {}),
       },
       select: { id: true, firstName: true, lastName: true, email: true, phone: true, createdAt: true },
     });

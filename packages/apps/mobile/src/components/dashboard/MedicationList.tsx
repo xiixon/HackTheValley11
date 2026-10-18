@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MedicationCard } from './MedicationCard';
 import { Medication } from '../../types/medication';
 import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
 
 type MedicationListProps = {
   medications: Medication[];
@@ -31,9 +32,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   heading: {
+    ...typography.heading,
     color: colors.primary,
     fontSize: 20,
-    fontWeight: '700',
   },
   count: {
     color: colors.textMuted,

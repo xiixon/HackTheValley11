@@ -1,26 +1,6 @@
 import type { Request, Response } from "express";
-import { z } from "zod";
 import { prisma } from "../src/db/prisma";
-
-const conditionSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  notes: z.string().max(500).optional(),
-});
-
-const profileSchema = z.object({
-  weightKg: z.number().positive().max(500).optional(),
-  heightCm: z.number().positive().max(300).optional(),
-  sex: z.enum(["male", "female", "other"]).optional(),
-  birthDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
-    .refine((d) => !Number.isNaN(Date.parse(d)), "Invalid date")
-    .refine((d) => new Date(d) <= new Date(), "Birth date cannot be in the future")
-    .refine((d) => new Date(d).getFullYear() >= new Date().getFullYear() - 120, "Birth date is too far in the past")
-    .optional(),
-  allergies: z.array(z.string().trim().min(1).max(100)).optional(),
-  healthConditions: z.array(conditionSchema).optional(),
-});
+import { profileUpdateSchema } from "../validation/profile";
 
 export const getUserProfile = async (req: Request, res: Response) => {
   const userId = req.userId;
@@ -43,7 +23,7 @@ export const upsertUserProfile = async (req: Request, res: Response) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  const parsed = profileSchema.safeParse(req.body);
+  const parsed = profileUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.issues });
   }
@@ -60,7 +40,7 @@ export const upsertUserProfile = async (req: Request, res: Response) => {
       select: { userId: true },
     });
 
-    // First time: weight and height are mandatory
+    // First time: all core profile fields are mandatory
     if (!existing) {
       if (
         weightKg === undefined || heightCm === undefined ||
@@ -109,4 +89,3 @@ export const upsertUserProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Internal server error b" });
   }
 };
-

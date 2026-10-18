@@ -10,6 +10,8 @@ import React, { useState } from "react";
 
 import { Medication, MedicationFormValues } from "../../types/medication";
 import { colors } from "../../theme/colors";
+import { PillBackground } from '../PillBackground';
+import { typography } from '../../theme/typography';
 import { AddMedicationModal } from "../medications/AddMedicationModal";
 import { MedicationDetailsModal } from "../medications/MedicationDetailsModal";
 
@@ -86,311 +88,313 @@ export function Schedule({
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.hero}>
-        <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>
-            {selectedDate.toLocaleDateString(undefined, {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
-          </Text>
-          <Text style={styles.title}>Your day,{"\n"}at a glance.</Text>
-          <Text style={styles.heroDescription}>
-            A clear view of what&apos;s next.
-          </Text>
+    <PillBackground>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.hero}>
+          <View style={styles.heroCopy}>
+            <Text style={styles.eyebrow}>
+              {selectedDate.toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </Text>
+            <Text style={styles.title}>Your day,{"\n"}at a glance.</Text>
+            <Text style={styles.heroDescription}>
+              A clear view of what&apos;s next.
+            </Text>
+          </View>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeNumber}>{untakenDoses}</Text>
+            <Text style={styles.heroBadgeLabel}>doses left</Text>
+          </View>
         </View>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeNumber}>{untakenDoses}</Text>
-          <Text style={styles.heroBadgeLabel}>doses left</Text>
-        </View>
-      </View>
 
-      <View style={styles.dateRail}>
-        {dates.map((date) => {
-          const label = weekdays[date.getDay()];
-          const number = date.getDate();
-          const isActive = getDateKey(date) === selectedDateKey;
+        <View style={styles.dateRail}>
+          {dates.map((date) => {
+            const label = weekdays[date.getDay()];
+            const number = date.getDate();
+            const isActive = getDateKey(date) === selectedDateKey;
 
-          return (
-            <Pressable
-              accessibilityLabel={`Select ${label} ${number}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-              key={getDateKey(date)}
-              onPress={() => setSelectedDate(date)}
-              style={({ pressed }) => [
-                styles.dateItem,
-                isActive && styles.dateItemActive,
-                pressed && styles.dateItemPressed,
-              ]}
-            >
-              <Text
-                style={[styles.dateLabel, isActive && styles.dateLabelActive]}
-              >
-                {label}
-              </Text>
-              <Text
-                style={[styles.dateNumber, isActive && styles.dateNumberActive]}
-              >
-                {number}
-              </Text>
-              {isActive && <View style={styles.dateDot} />}
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Scheduled doses</Text>
-          <Text style={styles.sectionSubtitle}>{selectedDateLabel}</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <Pressable
-            accessibilityLabel={`Add medication for ${selectedDateLabel}`}
-            accessibilityRole="button"
-            onPress={() => setIsAddMedicationVisible(true)}
-            style={({ pressed }) => [
-              styles.addHeaderButton,
-              pressed && styles.calendarButtonPressed,
-            ]}
-          >
-            <Text style={styles.addHeaderButtonText}>+ Add</Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel="Open date picker"
-            accessibilityRole="button"
-            onPress={() => {
-              setCalendarMonth(
-                new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-              );
-              setIsCalendarVisible(true);
-            }}
-            style={({ pressed }) => [
-              styles.calendarButton,
-              pressed && styles.calendarButtonPressed,
-            ]}
-          >
-            <Text style={styles.calendarLabel}>Change day</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.doseList}>
-        {selectedMedications.map((medication) => {
-          const isTaken = medication.status === "taken";
-
-          return (
-            <View
-              key={medication.id}
-              style={[
-                styles.doseCard,
-                isTaken ? styles.doseCardTaken : styles.doseCardUpcoming,
-              ]}
-            >
-              <View style={styles.timeColumn}>
-                <Text style={styles.time}>{medication.time}</Text>
-                <Text style={styles.timeLabel}>
-                  {isTaken ? "DONE" : "NEXT"}
-                </Text>
-              </View>
-              <View style={styles.cardDivider} />
-              <View style={styles.doseDetails}>
-                <View
-                  style={[
-                    styles.medicationDot,
-                    { backgroundColor: medication.color },
-                  ]}
-                />
-                <View style={styles.medicationCopy}>
-                  <Text style={styles.medicationName}>{medication.genericName}</Text>
-                  <Text style={styles.dosage}>{medication.dosage}</Text>
-                </View>
-              </View>
+            return (
               <Pressable
-                accessibilityLabel={`${isTaken ? "Undo taken status for" : "Mark"} ${medication.genericName}`}
+                accessibilityLabel={`Select ${label} ${number}`}
                 accessibilityRole="button"
-                accessibilityState={{ checked: isTaken }}
-                onPress={() => onToggleMedication(medication.id)}
+                accessibilityState={{ selected: isActive }}
+                key={getDateKey(date)}
+                onPress={() => setSelectedDate(date)}
                 style={({ pressed }) => [
-                  styles.status,
-                  isTaken ? styles.statusTaken : styles.statusUpcoming,
-                  pressed && styles.statusPressed,
+                  styles.dateItem,
+                  isActive && styles.dateItemActive,
+                  pressed && styles.dateItemPressed,
                 ]}
               >
                 <Text
-                  style={
-                    isTaken ? styles.statusTakenText : styles.statusUpcomingText
-                  }
+                  style={[styles.dateLabel, isActive && styles.dateLabelActive]}
                 >
-                  {isTaken ? "Taken" : "Upcoming"}
+                  {label}
                 </Text>
+                <Text
+                  style={[styles.dateNumber, isActive && styles.dateNumberActive]}
+                >
+                  {number}
+                </Text>
+                {isActive && <View style={styles.dateDot} />}
               </Pressable>
-              <Pressable
-                accessibilityLabel={`View details for ${medication.genericName}`}
-                accessibilityRole="button"
-                onPress={() => setDetailsMedication(medication)}
-                style={styles.detailsButton}
-              >
-                <Text style={styles.detailsButtonText}>Details</Text>
-              </Pressable>
-            </View>
-          );
-        })}
+            );
+          })}
+        </View>
 
-        {selectedMedications.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>✦</Text>
-            <Text style={styles.emptyStateTitle}>Nothing scheduled</Text>
-            <Text style={styles.emptyStateText}>
-              No medications have been added for this day yet.
-            </Text>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Scheduled doses</Text>
+            <Text style={styles.sectionSubtitle}>{selectedDateLabel}</Text>
+          </View>
+          <View style={styles.headerActions}>
             <Pressable
               accessibilityLabel={`Add medication for ${selectedDateLabel}`}
               accessibilityRole="button"
               onPress={() => setIsAddMedicationVisible(true)}
-              style={({ pressed }) => [styles.addButton, pressed && styles.statusPressed]}
-            >
-              <Text style={styles.addButtonText}>Add medication</Text>
-              <Text style={styles.addButtonIcon}>+</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setIsCalendarVisible(false)}
-        transparent
-        visible={isCalendarVisible}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable
-            accessibilityLabel="Close date picker"
-            accessibilityRole="button"
-            onPress={() => setIsCalendarVisible(false)}
-            style={styles.modalBackdrop}
-          />
-          <View style={styles.calendarModal}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalKicker}>SELECT A DAY</Text>
-                <Text style={styles.modalTitle}>Your schedule</Text>
-              </View>
-              <Pressable
-                accessibilityLabel="Close date picker"
-                accessibilityRole="button"
-                onPress={() => setIsCalendarVisible(false)}
-                style={({ pressed }) => [
-                  styles.closeButton,
-                  pressed && styles.calendarButtonPressed,
-                ]}
-              >
-                <Text style={styles.closeButtonText}>×</Text>
-              </Pressable>
-            </View>
-            <View style={styles.monthHeader}>
-              <Pressable
-                accessibilityLabel="Previous month"
-                accessibilityRole="button"
-                onPress={() => changeMonth(-1)}
-                style={styles.monthArrow}
-              >
-                <Text style={styles.monthArrowText}>‹</Text>
-              </Pressable>
-              <Text style={styles.modalMonth}>
-                {calendarMonth.toLocaleDateString(undefined, {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </Text>
-              <Pressable
-                accessibilityLabel="Next month"
-                accessibilityRole="button"
-                onPress={() => changeMonth(1)}
-                style={styles.monthArrow}
-              >
-                <Text style={styles.monthArrowText}>›</Text>
-              </Pressable>
-            </View>
-            <View style={styles.weekdayRow}>
-              {weekdays.map((weekday) => (
-                <Text key={weekday} style={styles.weekdayLabel}>
-                  {weekday.slice(0, 2)}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.calendarGrid}>
-              {calendarCells.map((date, index) => {
-                if (!date) {
-                  return <View key={`empty-${index}`} style={styles.calendarCell} />;
-                }
-
-                const isActive = getDateKey(date) === selectedDateKey;
-                const label = date.toLocaleDateString(undefined, {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                });
-
-                return (
-                  <Pressable
-                    accessibilityLabel={`Select ${label}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isActive }}
-                    key={getDateKey(date)}
-                    onPress={() => {
-                      setSelectedDate(date);
-                      setIsCalendarVisible(false);
-                    }}
-                    style={({ pressed }) => [
-                      styles.calendarCell,
-                      isActive && styles.calendarCellActive,
-                      pressed && styles.modalDateOptionPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.calendarDayNumber,
-                        isActive && styles.calendarDayNumberActive,
-                      ]}
-                    >
-                      {date.getDate()}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Pressable
-              accessibilityLabel="Keep current date"
-              accessibilityRole="button"
-              onPress={() => setIsCalendarVisible(false)}
               style={({ pressed }) => [
-                styles.doneButton,
-                pressed && styles.doneButtonPressed,
+                styles.addHeaderButton,
+                pressed && styles.calendarButtonPressed,
               ]}
             >
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.addHeaderButtonText}>+ Add</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel="Open date picker"
+              accessibilityRole="button"
+              onPress={() => {
+                setCalendarMonth(
+                  new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+                );
+                setIsCalendarVisible(true);
+              }}
+              style={({ pressed }) => [
+                styles.calendarButton,
+                pressed && styles.calendarButtonPressed,
+              ]}
+            >
+              <Text style={styles.calendarLabel}>Change day</Text>
             </Pressable>
           </View>
         </View>
-      </Modal>
-      <AddMedicationModal
-        date={selectedDate}
-        onClose={() => setIsAddMedicationVisible(false)}
-        onSubmit={(medication) => onAddMedication(selectedDate, medication)}
-        visible={isAddMedicationVisible}
-      />
-      <MedicationDetailsModal
-        medication={detailsMedication}
-        onClose={() => setDetailsMedication(null)}
-      />
-    </ScrollView>
+
+        <View style={styles.doseList}>
+          {selectedMedications.map((medication) => {
+            const isTaken = medication.status === "taken";
+
+            return (
+              <View
+                key={medication.id}
+                style={[
+                  styles.doseCard,
+                  isTaken ? styles.doseCardTaken : styles.doseCardUpcoming,
+                ]}
+              >
+                <View style={styles.timeColumn}>
+                  <Text style={styles.time}>{medication.time}</Text>
+                  <Text style={styles.timeLabel}>
+                    {isTaken ? "DONE" : "NEXT"}
+                  </Text>
+                </View>
+                <View style={styles.cardDivider} />
+                <View style={styles.doseDetails}>
+                  <View
+                    style={[
+                      styles.medicationDot,
+                      { backgroundColor: medication.color },
+                    ]}
+                  />
+                  <View style={styles.medicationCopy}>
+                    <Text style={styles.medicationName}>{medication.genericName}</Text>
+                    <Text style={styles.dosage}>{medication.dosage}</Text>
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityLabel={`${isTaken ? "Undo taken status for" : "Mark"} ${medication.genericName}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ checked: isTaken }}
+                  onPress={() => onToggleMedication(medication.id)}
+                  style={({ pressed }) => [
+                    styles.status,
+                    isTaken ? styles.statusTaken : styles.statusUpcoming,
+                    pressed && styles.statusPressed,
+                  ]}
+                >
+                  <Text
+                    style={
+                      isTaken ? styles.statusTakenText : styles.statusUpcomingText
+                    }
+                  >
+                    {isTaken ? "Taken" : "Upcoming"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={`View details for ${medication.genericName}`}
+                  accessibilityRole="button"
+                  onPress={() => setDetailsMedication(medication)}
+                  style={styles.detailsButton}
+                >
+                  <Text style={styles.detailsButtonText}>Details</Text>
+                </Pressable>
+              </View>
+            );
+          })}
+
+          {selectedMedications.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateIcon}>✦</Text>
+              <Text style={styles.emptyStateTitle}>Nothing scheduled</Text>
+              <Text style={styles.emptyStateText}>
+                No medications have been added for this day yet.
+              </Text>
+              <Pressable
+                accessibilityLabel={`Add medication for ${selectedDateLabel}`}
+                accessibilityRole="button"
+                onPress={() => setIsAddMedicationVisible(true)}
+                style={({ pressed }) => [styles.addButton, pressed && styles.statusPressed]}
+              >
+                <Text style={styles.addButtonText}>Add medication</Text>
+                <Text style={styles.addButtonIcon}>+</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+        <Modal
+          animationType="fade"
+          onRequestClose={() => setIsCalendarVisible(false)}
+          transparent
+          visible={isCalendarVisible}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable
+              accessibilityLabel="Close date picker"
+              accessibilityRole="button"
+              onPress={() => setIsCalendarVisible(false)}
+              style={styles.modalBackdrop}
+            />
+            <View style={styles.calendarModal}>
+              <View style={styles.modalHeader}>
+                <View>
+                  <Text style={styles.modalKicker}>SELECT A DAY</Text>
+                  <Text style={styles.modalTitle}>Your schedule</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close date picker"
+                  accessibilityRole="button"
+                  onPress={() => setIsCalendarVisible(false)}
+                  style={({ pressed }) => [
+                    styles.closeButton,
+                    pressed && styles.calendarButtonPressed,
+                  ]}
+                >
+                  <Text style={styles.closeButtonText}>×</Text>
+                </Pressable>
+              </View>
+              <View style={styles.monthHeader}>
+                <Pressable
+                  accessibilityLabel="Previous month"
+                  accessibilityRole="button"
+                  onPress={() => changeMonth(-1)}
+                  style={styles.monthArrow}
+                >
+                  <Text style={styles.monthArrowText}>‹</Text>
+                </Pressable>
+                <Text style={styles.modalMonth}>
+                  {calendarMonth.toLocaleDateString(undefined, {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </Text>
+                <Pressable
+                  accessibilityLabel="Next month"
+                  accessibilityRole="button"
+                  onPress={() => changeMonth(1)}
+                  style={styles.monthArrow}
+                >
+                  <Text style={styles.monthArrowText}>›</Text>
+                </Pressable>
+              </View>
+              <View style={styles.weekdayRow}>
+                {weekdays.map((weekday) => (
+                  <Text key={weekday} style={styles.weekdayLabel}>
+                    {weekday.slice(0, 2)}
+                  </Text>
+                ))}
+              </View>
+              <View style={styles.calendarGrid}>
+                {calendarCells.map((date, index) => {
+                  if (!date) {
+                    return <View key={`empty-${index}`} style={styles.calendarCell} />;
+                  }
+
+                  const isActive = getDateKey(date) === selectedDateKey;
+                  const label = date.toLocaleDateString(undefined, {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  });
+
+                  return (
+                    <Pressable
+                      accessibilityLabel={`Select ${label}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isActive }}
+                      key={getDateKey(date)}
+                      onPress={() => {
+                        setSelectedDate(date);
+                        setIsCalendarVisible(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.calendarCell,
+                        isActive && styles.calendarCellActive,
+                        pressed && styles.modalDateOptionPressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.calendarDayNumber,
+                          isActive && styles.calendarDayNumberActive,
+                        ]}
+                      >
+                        {date.getDate()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Pressable
+                accessibilityLabel="Keep current date"
+                accessibilityRole="button"
+                onPress={() => setIsCalendarVisible(false)}
+                style={({ pressed }) => [
+                  styles.doneButton,
+                  pressed && styles.doneButtonPressed,
+                ]}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        <AddMedicationModal
+          date={selectedDate}
+          onClose={() => setIsAddMedicationVisible(false)}
+          onSubmit={(medication) => onAddMedication(selectedDate, medication)}
+          visible={isAddMedicationVisible}
+        />
+        <MedicationDetailsModal
+          medication={detailsMedication}
+          onClose={() => setDetailsMedication(null)}
+        />
+      </ScrollView>
+    </PillBackground>
   );
 }
 
@@ -421,10 +425,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   title: {
+    ...typography.heading,
     color: colors.background,
     fontSize: 38,
-    fontWeight: "800",
-    letterSpacing: -1.5,
     lineHeight: 41,
     marginTop: 14,
   },
@@ -443,9 +446,9 @@ const styles = StyleSheet.create({
     width: 76,
   },
   heroBadgeNumber: {
+    ...typography.heading,
     color: colors.primary,
     fontSize: 28,
-    fontWeight: "800",
   },
   heroBadgeLabel: {
     color: colors.primary,
@@ -527,10 +530,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   sectionTitle: {
+    ...typography.heading,
     color: colors.text,
     fontSize: 27,
-    fontWeight: "800",
-    letterSpacing: -0.7,
   },
   sectionSubtitle: {
     color: colors.textMuted,
@@ -585,9 +587,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
   modalTitle: {
+    ...typography.heading,
     color: colors.text,
     fontSize: 26,
-    fontWeight: "800",
     marginTop: 5,
   },
   closeButton: {
@@ -740,9 +742,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   emptyStateTitle: {
+    ...typography.heading,
     color: colors.text,
     fontSize: 18,
-    fontWeight: "800",
     marginTop: 10,
   },
   emptyStateText: {

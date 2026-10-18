@@ -14,6 +14,7 @@ import {
 
 import { MedicationFormValues } from "../../types/medication";
 import { colors } from "../../theme/colors";
+import { typography } from '../../theme/typography';
 
 type AddMedicationModalProps = {
   date: Date;
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
   content: { padding: 24, paddingBottom: 36 },
   header: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
   kicker: { color: colors.primary, fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
-  title: { color: colors.text, fontSize: 28, fontWeight: "800", marginTop: 5 },
+  title: { ...typography.heading, color: colors.text, fontSize: 28, marginTop: 5 },
   closeButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   closeText: { color: colors.primary, fontSize: 25, lineHeight: 28 },
   field: { flex: 1, marginBottom: 14 },
