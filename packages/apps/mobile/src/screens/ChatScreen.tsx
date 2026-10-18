@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Platform, Pressable,
   ScrollView, StyleSheet, Text, TextInput, View,
@@ -92,7 +92,7 @@ export function ChatScreen() {
   const canSend = !!draft.trim() && !busy;
   const conversation = (
     <PillBackground>
-      <KeyboardAvoidingView style={styles.conversationShell} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ChatKeyboardAvoidingView>
         <View style={styles.header}>
           <View style={styles.heading}>
             <Text accessibilityRole="header" style={styles.title}>IntelliMed</Text>
@@ -106,6 +106,7 @@ export function ChatScreen() {
         </View>
         <ScrollView ref={scroll} style={styles.conversation} contentContainerStyle={styles.messages}
           keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
+          onLayout={() => { if (messages.length > 0) scroll.current?.scrollToEnd({ animated: false }); }}
           onContentSizeChange={() => {
             if (scrollAfterMessage.current) { scrollAfterMessage.current = false; scroll.current?.scrollToEnd({ animated: true }); }
           }}>
@@ -147,11 +148,28 @@ export function ChatScreen() {
             </Pressable>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </ChatKeyboardAvoidingView>
     </PillBackground>
   );
   return Platform.OS === 'web' ? conversation : (
     <SafeAreaView edges={{ bottom: true }} style={styles.screen}>{conversation}</SafeAreaView>
+  );
+}
+
+function ChatKeyboardAvoidingView({ children }: PropsWithChildren) {
+  const container = useRef<View>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  return (
+    <View ref={container} collapsable={false} style={styles.conversationShell}
+      onLayout={() => container.current?.measureInWindow((_x, y) => setKeyboardOffset(y))}>
+      <KeyboardAvoidingView style={styles.conversationShell}
+        enabled={Platform.OS !== 'web'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardOffset}>
+        {children}
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
