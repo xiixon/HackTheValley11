@@ -2,6 +2,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Alert,
   StyleSheet,
   Text,
   View,
@@ -22,6 +23,7 @@ type ScheduleProps = {
   onCycleMedicationStatus: (id: string) => void;
   onAddMedication: (date: Date, medication: MedicationFormValues) => void;
   onUpdateMedication: (id: string, medication: MedicationFormValues) => void;
+  onDeleteMedication: (id: string) => void;
 };
 
 function getDateKey(date: Date) {
@@ -37,6 +39,7 @@ export function Schedule({
   onCycleMedicationStatus,
   onAddMedication,
   onUpdateMedication,
+  onDeleteMedication,
 }: ScheduleProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
@@ -330,6 +333,30 @@ export function Schedule({
                   ]}
                 >
                   <Text style={styles.detailsButtonText}>Details</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={`Delete ${medication.genericName} scheduled dose`}
+                  accessibilityRole="button"
+                  onPress={() =>
+                    Alert.alert(
+                      "Delete scheduled dose?",
+                      `Remove the ${medication.time} dose of ${medication.genericName}?`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Delete",
+                          style: "destructive",
+                          onPress: () => onDeleteMedication(medication.id),
+                        },
+                      ],
+                    )
+                  }
+                  style={({ pressed }) => [
+                    styles.deleteButton,
+                    pressed && styles.statusPressed,
+                  ]}
+                >
+                  <Text style={styles.deleteButtonText}>Delete</Text>
                 </Pressable>
               </View>
             </View>
@@ -1091,5 +1118,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     textAlign: "center",
+  },
+  deleteButton: {
+    alignItems: "center",
+    borderRadius: 10,
+    justifyContent: "center",
+    marginTop: 6,
+    minHeight: 26,
+  },
+  deleteButtonText: {
+    color: "#B5485A",
+    fontSize: 10,
+    fontWeight: "800",
   },
 });

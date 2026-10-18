@@ -46,7 +46,9 @@ export function MedicationDetailsModal({
         )}
         {medication.scheduledDate && (
           <Text style={styles.scheduledDate}>
-            Scheduled for {medication.scheduledDate}
+            {medication.startDate && medication.endDate
+              ? `Runs ${medication.startDate} to ${medication.endDate}`
+              : `Scheduled for ${medication.scheduledDate}`}
           </Text>
         )}
         <Section title="Purpose" values={medication.purposes} />

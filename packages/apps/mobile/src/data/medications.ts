@@ -440,6 +440,27 @@ export const medicationCatalog: MedicationCatalogEntry[] =
     };
   });
 
+function getReminderTimes(medication: MedicationCatalogEntry) {
+  if (medication.reminderTimes?.length) return medication.reminderTimes;
+  return medication.time
+    .split(/\s+and\s+/i)
+    .map((time) => time.trim())
+    .filter(Boolean);
+}
+
+export const scheduledMedicationCatalog: MedicationCatalogEntry[] =
+  medicationCatalog.flatMap((medication) =>
+    getReminderTimes(medication).map((time, index) => ({
+      ...medication,
+      id:
+        getReminderTimes(medication).length > 1
+          ? `${medication.id}-${index}`
+          : medication.id,
+      time,
+      reminderTimes: getReminderTimes(medication),
+    })),
+  );
+
 const interactionRules: {
   groups: [string, string];
   message: string;
@@ -548,7 +569,7 @@ export const medicationValidationResults = medicationCatalog.map((medication) =>
 }));
 
 export const medicationsByDate: Record<string, Medication[]> =
-  medicationCatalog.reduce<Record<string, Medication[]>>((grouped, medication) => {
+  scheduledMedicationCatalog.reduce<Record<string, Medication[]>>((grouped, medication) => {
     const dateKey = medication.scheduledDate;
     if (!dateKey) return grouped;
 

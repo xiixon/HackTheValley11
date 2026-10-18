@@ -15,6 +15,9 @@ export type Medication = SharedMedication & {
   startDate?: string;
   endDate?: string;
   notes?: string;
+  reminderTimes?: string[];
+  selectedWeekdays?: number[];
+  intervalDays?: number;
 };
 
 export type MedicationDisplayStatus = MedicationStatus | 'missed';
@@ -64,6 +67,9 @@ export type MedicationFormValues = Pick<
   startDate: string;
   endDate: string;
   notes: string;
+  reminderTimes: string[];
+  selectedWeekdays: number[];
+  intervalDays: number;
 };
 
 export type { DosageForm, Ingredient };

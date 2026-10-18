@@ -8,6 +8,7 @@ type MedicationContextValue = {
   cycleMedicationStatus: (id: string) => void;
   addMedication: (date: Date, medication: MedicationFormValues) => void;
   updateMedication: (id: string, medication: MedicationFormValues) => void;
+  deleteMedication: (id: string) => void;
 };
 
 const MedicationContext = createContext<MedicationContextValue | undefined>(
@@ -27,21 +28,32 @@ function getDateKey(date: Date) {
 }
 
 function getDatesForFrequency(
-  startDate: string,
-  endDate: string,
-  frequency: string,
+  medication: MedicationFormValues,
   fallbackDate: Date,
 ) {
-  const start = startDate ? new Date(`${startDate}T12:00:00`) : fallbackDate;
-  const end = endDate ? new Date(`${endDate}T12:00:00`) : start;
+  const start = medication.startDate ? new Date(`${medication.startDate}T12:00:00`) : fallbackDate;
+  const end = medication.endDate ? new Date(`${medication.endDate}T12:00:00`) : start;
   const dates: Date[] = [];
   const current = new Date(start);
 
   while (current <= end && dates.length < 366) {
-    dates.push(new Date(current));
-    if (frequency === "Daily") current.setDate(current.getDate() + 1);
-    else if (frequency === "Weekly") current.setDate(current.getDate() + 7);
-    else if (frequency === "Monthly") current.setMonth(current.getMonth() + 1);
+    const include =
+      medication.Frequency === "Selected days"
+        ? medication.selectedWeekdays.includes(current.getDay())
+        : medication.Frequency === "Weekly"
+          ? current.getDay() === start.getDay()
+          : true;
+    if (include) dates.push(new Date(current));
+
+    if (medication.Frequency === "Daily" || medication.Frequency === "Selected days") {
+      current.setDate(current.getDate() + 1);
+    } else if (medication.Frequency === "Every N days") {
+      current.setDate(current.getDate() + Math.max(1, medication.intervalDays));
+    } else if (medication.Frequency === "Weekly") {
+      current.setDate(current.getDate() + 1);
+    } else if (medication.Frequency === "Monthly") {
+      current.setMonth(current.getMonth() + 1);
+    }
     else break;
   }
 
@@ -80,24 +92,23 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
   };
 
   const addMedication = (date: Date, medication: MedicationFormValues) => {
-    const dates = getDatesForFrequency(
-      medication.startDate,
-      medication.endDate,
-      medication.Frequency,
-      date,
-    );
+    const dates = getDatesForFrequency(medication, date);
     setMedicationsByDate((current) => {
       const next = { ...current };
       dates.forEach((scheduledDate) => {
         const dateKey = getDateKey(scheduledDate);
-        const scheduledMedication: Medication = {
-          ...medication,
-          id: dates.length > 1 ? `${medication.id}-${dateKey}` : medication.id,
-          scheduledDate: dateKey,
-          status: "upcoming",
-          dosage: `${medication.doseAmount} ${medication.dosageForm}`,
-        };
-        next[dateKey] = [...(next[dateKey] ?? []), scheduledMedication];
+        const times = medication.reminderTimes.length ? medication.reminderTimes : [medication.time];
+        next[dateKey] = [
+          ...(next[dateKey] ?? []),
+          ...times.map((time, timeIndex) => ({
+            ...medication,
+            id: dates.length > 1 || times.length > 1 ? `${medication.id}-${dateKey}-${timeIndex}` : medication.id,
+            time,
+            scheduledDate: dateKey,
+            status: "upcoming" as const,
+            dosage: `${medication.doseAmount} ${medication.dosageForm}`,
+          })),
+        ];
       });
       return next;
     });
@@ -128,12 +139,24 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const deleteMedication = (id: string) => {
+    setMedicationsByDate((current) => {
+      const next: Record<string, Medication[]> = {};
+      Object.entries(current).forEach(([dateKey, medications]) => {
+        const remaining = medications.filter((medication) => medication.id !== id);
+        if (remaining.length > 0) next[dateKey] = remaining;
+      });
+      return next;
+    });
+  };
+
   const value = useMemo(
     () => ({
       medicationsByDate,
       cycleMedicationStatus,
       addMedication,
       updateMedication,
+      deleteMedication,
     }),
     [medicationsByDate],
   );

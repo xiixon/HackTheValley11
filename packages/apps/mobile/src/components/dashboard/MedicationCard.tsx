@@ -19,48 +19,56 @@ export function MedicationCard({ medication, onMarkTaken, onEditMedication }: Me
 
   return (
     <View style={styles.card}>
-      <View style={[styles.icon, { backgroundColor: medication.color }]}>
-        <Text style={styles.iconText}>✚</Text>
-      </View>
-      <View style={styles.details}>
-        <Text style={styles.name}>{medication.genericName}</Text>
-        <Text style={styles.dosage}>{medication.dosage}</Text>
-        <Text style={styles.time}>{medication.time}</Text>
-      </View>
-      <Pressable
-        accessibilityLabel={
-          isMissed
-            ? `${medication.genericName} was missed; mark it as taken`
-            : `${isTaken ? 'Mark' : 'Take'} ${medication.genericName}`
-        }
-        accessibilityRole="button"
-        accessibilityState={{ checked: isTaken }}
-        disabled={isMissed}
-        onPress={() => onMarkTaken(medication.id)}
-        style={({ pressed }) => [
-          isMissed ? styles.missedButton : isTaken ? styles.takenButton : styles.takeButton,
-          pressed && styles.pressed,
-        ]}
-      >
-        {isTaken && <Text style={styles.takenCheck}>✓</Text>}
-        {isMissed && <Text style={styles.missedMark}>!</Text>}
-        <Text style={isMissed ? styles.missedText : isTaken ? styles.takenText : styles.takeButtonText}>
-          {isMissed ? 'Missed' : isTaken ? 'Taken' : 'Upcoming'}
-        </Text>
-      </Pressable>
-      {isMissed && (
+      <View style={styles.mainRow}>
+        <View style={[styles.icon, { backgroundColor: medication.color }]}>
+          <Text style={styles.iconText}>✚</Text>
+        </View>
+        <View style={styles.details}>
+          <Text style={styles.name}>{medication.genericName}</Text>
+          <Text style={styles.dosage}>{medication.dosage}</Text>
+          <Text style={styles.time}>{medication.time}</Text>
+        </View>
         <Pressable
-          accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+          accessibilityLabel={
+            isMissed
+              ? `${medication.genericName} was missed; mark it as taken`
+              : `${isTaken ? 'Mark' : 'Take'} ${medication.genericName}`
+          }
           accessibilityRole="button"
+          accessibilityState={{ checked: isTaken }}
+          disabled={isMissed}
           onPress={() => onMarkTaken(medication.id)}
-          style={({ pressed }) => [styles.markTakenButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            isMissed ? styles.missedButton : isTaken ? styles.takenButton : styles.takeButton,
+            pressed && styles.pressed,
+          ]}
         >
-          <Text style={styles.markTakenText}>Mark taken</Text>
+          {isTaken && <Text style={styles.takenCheck}>✓</Text>}
+          <Text style={isMissed ? styles.missedText : isTaken ? styles.takenText : styles.takeButtonText}>
+            {isMissed ? 'Missed!' : isTaken ? 'Taken' : 'Upcoming'}
+          </Text>
         </Pressable>
-      )}
-      <Pressable accessibilityLabel={`View details for ${medication.genericName}`} accessibilityRole="button" onPress={() => setIsDetailsVisible(true)}>
-        <Text style={styles.detailsLink}>Details</Text>
-      </Pressable>
+      </View>
+      <View style={styles.actionRow}>
+        {isMissed && (
+          <Pressable
+            accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+            accessibilityRole="button"
+            onPress={() => onMarkTaken(medication.id)}
+            style={({ pressed }) => [styles.markTakenButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.markTakenText}>Mark taken</Text>
+          </Pressable>
+        )}
+        <Pressable
+          accessibilityLabel={`View details for ${medication.genericName}`}
+          accessibilityRole="button"
+          onPress={() => setIsDetailsVisible(true)}
+          style={({ pressed }) => [styles.detailsLink, pressed && styles.pressed]}
+        >
+          <Text style={styles.detailsLinkText}>Details</Text>
+        </Pressable>
+      </View>
       <MedicationDetailsModal
         medication={isDetailsVisible ? medication : null}
         onClose={() => setIsDetailsVisible(false)}
@@ -80,10 +88,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     marginBottom: 12,
     minHeight: 108,
     padding: 16,
+  },
+  mainRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    width: '100%',
   },
   icon: {
     alignItems: 'center',
@@ -159,12 +172,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
-  missedMark: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '900',
-    marginRight: 4,
-  },
   missedText: {
     color: colors.primary,
     fontSize: 11,
@@ -174,7 +181,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     borderRadius: 10,
     borderWidth: 1,
-    marginLeft: 8,
+    marginRight: 8,
     paddingHorizontal: 8,
     paddingVertical: 7,
   },
@@ -186,10 +193,22 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
+  actionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+    width: '100%',
+  },
   detailsLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+    minWidth: 64,
+  },
+  detailsLinkText: {
     color: colors.primary,
     fontSize: 11,
     fontWeight: '800',
-    marginLeft: 8,
   },
 });
