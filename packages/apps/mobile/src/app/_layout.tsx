@@ -76,10 +76,6 @@ function Navigation() {
             <NativeTabs.Trigger.Label>Schedule</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon sf="calendar" md="calendar_month" />
           </NativeTabs.Trigger>
-          <NativeTabs.Trigger name="medications" hidden={!signedIn}>
-            <NativeTabs.Trigger.Label>Meds</NativeTabs.Trigger.Label>
-            <NativeTabs.Trigger.Icon sf={{ default: 'pills', selected: 'pills.fill' }} md="medication" />
-          </NativeTabs.Trigger>
           <NativeTabs.Trigger name="chat" hidden={!signedIn} disableAutomaticContentInsets>
             <NativeTabs.Trigger.Label>IntelliMed</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon sf="bubble.left.and.bubble.right" md="chat" />
