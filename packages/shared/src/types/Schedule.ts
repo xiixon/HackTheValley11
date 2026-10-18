@@ -43,17 +43,18 @@ export function isValidTime(time: string): boolean {
     return false;
   }
 
-  if (pieces[0].length !== 2 || pieces[1].length !== 2) {
+  const [hoursText, minutesText] = pieces;
+  if (!hoursText || !minutesText || hoursText.length !== 2 || minutesText.length !== 2) {
     return false;
   }
 
   // Ensures both pieces contain digits only
-  if (!/^\d{2}$/.test(pieces[0]) || !/^\d{2}$/.test(pieces[1])) {
+  if (!/^\d{2}$/.test(hoursText) || !/^\d{2}$/.test(minutesText)) {
     return false;
   }
 
-  const hours = Number(pieces[0]);
-  const minutes = Number(pieces[1]);
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
 
   if (hours < 0 || hours > 23) {
     return false;
