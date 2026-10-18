@@ -9,8 +9,8 @@ import { AddMedicationModal } from '../components/medications/AddMedicationModal
 import { useState } from 'react';
 import { colors } from '../theme/colors';
 import { typography } from "../theme/typography";
-import { PillBackground } from "../components/PillBackground";
 import { useAuth } from '../auth/AuthContext';
+import { PageBackdrop } from '../components/navigation/PageBackdrop';
 
 export function DashboardScreen() {
   const { session } = useAuth();
@@ -26,7 +26,7 @@ export function DashboardScreen() {
   const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
   return (
-    <PillBackground>
+    <PageBackdrop variant="dashboard">
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -93,7 +93,7 @@ export function DashboardScreen() {
           <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
         </View>
       </ScrollView>
-    </PillBackground>
+    </PageBackdrop>
   );
 }
 

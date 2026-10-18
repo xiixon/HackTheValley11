@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { useMedications } from '../context/MedicationContext';
+import { PageBackdrop } from '../components/navigation/PageBackdrop';
 import { colors } from '../theme/colors';
 import { getMedicationDisplayStatus, Medication } from '../types/medication';
 
@@ -142,13 +143,19 @@ export default function HistoryScreen() {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
+    <PageBackdrop variant="history">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.headerRow}>
+        <View pointerEvents="none" style={styles.headerPattern}>
+          <View style={[styles.patternPill, styles.patternPillOne]} />
+          <View style={[styles.patternPill, styles.patternPillTwo]} />
+          <View style={[styles.patternPill, styles.patternPillThree]} />
+        </View>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>YOUR CARE JOURNAL</Text>
           <Text style={styles.title}>Dose history</Text>
@@ -174,6 +181,11 @@ export default function HistoryScreen() {
       )}
 
       <View style={styles.summaryCard}>
+        <View pointerEvents="none" style={styles.summaryPattern}>
+          <View style={[styles.summaryPill, styles.summaryPillOne]} />
+          <View style={[styles.summaryPill, styles.summaryPillTwo]} />
+          <View style={[styles.summaryPill, styles.summaryPillThree]} />
+        </View>
         <View>
           <Text style={styles.summaryLabel}>SHOWING</Text>
           <Text style={styles.summaryValue}>{filteredEntries.length} recorded doses</Text>
@@ -294,13 +306,19 @@ export default function HistoryScreen() {
           <Text style={styles.emptyText}>Try a different medication, date range, or keyword.</Text>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </PageBackdrop>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { backgroundColor: colors.background, padding: 20, paddingBottom: 42 },
-  headerRow: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
+  content: { padding: 20, paddingBottom: 42, position: 'relative' },
+  headerRow: { alignItems: 'flex-start', borderRadius: 24, flexDirection: 'row', justifyContent: 'space-between', overflow: 'hidden', padding: 16, position: 'relative' },
+  headerPattern: { ...StyleSheet.absoluteFill, backgroundColor: '#F4F0FF' },
+  patternPill: { borderRadius: 20, height: 15, position: 'absolute', transform: [{ rotate: '-32deg' }], width: 48 },
+  patternPillOne: { backgroundColor: '#DDD8F5', right: 55, top: -2 },
+  patternPillTwo: { backgroundColor: '#F7CDD8', right: -8, top: 33, transform: [{ rotate: '40deg' }] },
+  patternPillThree: { backgroundColor: '#D1EAF1', right: 84, top: 66, transform: [{ rotate: '25deg' }] },
   headerCopy: { flex: 1 },
   eyebrow: { color: colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1.6 },
   title: { color: colors.primary, fontSize: 32, fontWeight: '900', marginTop: 6 },
@@ -310,26 +328,31 @@ const styles = StyleSheet.create({
   helpCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginTop: 14, padding: 15 },
   helpTitle: { color: colors.primary, fontSize: 13, fontWeight: '900' },
   helpBody: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 5 },
-  summaryCard: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 20, flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, padding: 18 },
+  summaryCard: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 20, flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, overflow: 'hidden', padding: 18, position: 'relative' },
+  summaryPattern: { ...StyleSheet.absoluteFill },
+  summaryPill: { borderRadius: 20, height: 17, opacity: 0.18, position: 'absolute', width: 58 },
+  summaryPillOne: { backgroundColor: '#FFFFFF', right: 116, top: -5, transform: [{ rotate: '28deg' }] },
+  summaryPillTwo: { backgroundColor: '#FFB4C2', right: 16, top: 8, transform: [{ rotate: '-38deg' }] },
+  summaryPillThree: { backgroundColor: '#9BE0E3', bottom: -4, right: 58, transform: [{ rotate: '26deg' }] },
   summaryLabel: { color: '#C8D4F7', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   summaryValue: { color: colors.surface, fontSize: 18, fontWeight: '800', marginTop: 4 },
   exportButton: { alignItems: 'center', backgroundColor: colors.background, borderRadius: 12, flexDirection: 'row', minHeight: 42, paddingHorizontal: 12 },
   exportIcon: { color: colors.primary, fontSize: 19, fontWeight: '800', marginRight: 5 },
   exportText: { color: colors.primary, fontSize: 12, fontWeight: '900' },
   exportMessage: { color: '#287A62', fontSize: 12, fontWeight: '700', marginTop: 7, textAlign: 'right' },
-  searchBox: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 15, borderWidth: 1, flexDirection: 'row', marginTop: 18, minHeight: 50, paddingHorizontal: 14 },
+  searchBox: { alignItems: 'center', backgroundColor: '#FFFCF4', borderColor: '#E2D6B8', borderRadius: 15, borderWidth: 1, flexDirection: 'row', marginTop: 18, minHeight: 50, paddingHorizontal: 14 },
   searchIcon: { color: colors.primary, fontSize: 25, marginRight: 8 },
   searchInput: { color: colors.text, flex: 1, fontSize: 14, minHeight: 48 },
   clearText: { color: colors.textMuted, fontSize: 22, paddingLeft: 8 },
   filterLabel: { color: colors.textMuted, fontSize: 10, fontWeight: '900', letterSpacing: 1.1, marginBottom: 8, marginTop: 18 },
   chipScroll: { marginHorizontal: -20, paddingHorizontal: 20 },
-  chip: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginRight: 8, paddingHorizontal: 13, paddingVertical: 9 },
-  activeChip: { backgroundColor: colors.secondary, borderColor: colors.secondary },
+  chip: { backgroundColor: '#FFFDF8', borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginRight: 8, paddingHorizontal: 13, paddingVertical: 9 },
+  activeChip: { backgroundColor: '#C8EAF0', borderColor: '#9FD7E1' },
   chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   activeChipText: { color: colors.primary },
   rangeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  rangeButton: { borderColor: colors.border, borderRadius: 14, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9 },
-  activeRangeButton: { backgroundColor: colors.surfaceMuted, borderColor: colors.primary },
+  rangeButton: { backgroundColor: '#FFFDF8', borderColor: colors.border, borderRadius: 14, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9 },
+  activeRangeButton: { backgroundColor: '#E4E0F6', borderColor: '#8C8AC2' },
   rangeText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   activeRangeText: { color: colors.primary },
   timelineHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 28 },
@@ -338,7 +361,7 @@ const styles = StyleSheet.create({
   legendText: { color: colors.textMuted, fontSize: 10, lineHeight: 16 },
   dayGroup: { marginTop: 18 },
   dateHeading: { color: colors.textMuted, fontSize: 12, fontWeight: '800', marginBottom: 9 },
-  entryCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, borderWidth: 1, flexDirection: 'row', marginBottom: 10, overflow: 'hidden', padding: 15 },
+  entryCard: { backgroundColor: '#FFFDF9', borderColor: '#E8DEC5', borderRadius: 18, borderWidth: 1, flexDirection: 'row', marginBottom: 10, overflow: 'hidden', padding: 15 },
   entryPressed: { opacity: 0.78 },
   timelineDot: { borderRadius: 7, height: 14, marginRight: 12, marginTop: 3, width: 14 },
   entryContent: { flex: 1 },
@@ -355,7 +378,7 @@ const styles = StyleSheet.create({
   notes: { color: colors.text, fontSize: 13, lineHeight: 19, marginTop: 4 },
   scheduled: { color: colors.text, fontSize: 13, marginTop: 4 },
   detailsHint: { color: colors.primary, fontSize: 10, fontWeight: '900', marginTop: 12, textAlign: 'right' },
-  emptyState: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 20, borderWidth: 1, marginTop: 18, padding: 30 },
+  emptyState: { alignItems: 'center', backgroundColor: '#F6F1E4', borderColor: colors.border, borderRadius: 20, borderWidth: 1, marginTop: 18, overflow: 'hidden', padding: 30 },
   emptyIcon: { color: colors.secondary, fontSize: 34 },
   emptyTitle: { color: colors.primary, fontSize: 17, fontWeight: '900', marginTop: 8 },
   emptyText: { color: colors.textMuted, fontSize: 13, marginTop: 5, textAlign: 'center' },
