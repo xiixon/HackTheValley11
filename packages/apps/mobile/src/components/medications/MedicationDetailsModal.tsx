@@ -1,4 +1,5 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { Medication } from "../../types/medication";
 import { colors } from "../../theme/colors";
@@ -19,76 +20,80 @@ export function MedicationDetailsModal({
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} visible>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.kicker}>MEDICATION DETAILS</Text>
-            <Text style={styles.title}>{medication.genericName}</Text>
-            <Text style={styles.brand}>{medication.brandName}</Text>
-          </View>
-          <Pressable accessibilityLabel="Close medication details" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeText}>×</Text>
-          </Pressable>
-        </View>
-        <View style={styles.summary}>
-          <Detail label="Dose" value={`${medication.doseAmount} ${medication.dosageForm}`} />
-          <Detail label="Frequency" value={medication.Frequency} />
-          <Detail label="Time" value={medication.time} />
-        </View>
-        {medication.Frequency.toLowerCase().includes("as needed") && (
-          <View style={styles.asNeededNote}>
-            <Text style={styles.asNeededTitle}>What does “as needed” mean?</Text>
-            <Text style={styles.asNeededText}>
-              Take this dose only when the symptoms or situation it was prescribed
-              for occurs. Follow the directions from your healthcare professional
-              for how much to take and how often.
-            </Text>
-          </View>
-        )}
-        {medication.scheduledDate && (
-          <Text style={styles.scheduledDate}>
-            {medication.startDate && medication.endDate
-              ? `Runs ${medication.startDate} to ${medication.endDate}`
-              : `Scheduled for ${medication.scheduledDate}`}
-          </Text>
-        )}
-        <Section title="Purpose" values={medication.purposes} />
-        <Section
-          title="Ingredients"
-          values={medication.ingredients.map(({ name, strength }) => `${name} · ${strength} mg`)}
-        />
-        <Section title="Warnings" values={medication.warning} emptyLabel="No warnings recorded." />
-        <Section
-          title="Avoid with conditions"
-          values={medication.avoidWithConditions}
-          emptyLabel="No conditions recorded."
-        />
-        <Section
-          title="Avoid with ingredients"
-          values={medication.avoidWithIngredients}
-          emptyLabel="No interactions recorded."
-        />
-        <Section
-          title="Instructions and notes"
-          values={medication.notes ? [medication.notes] : []}
-          emptyLabel="No additional instructions."
-        />
-        <View style={styles.editArea}>
-          <Text style={styles.editPrompt}>Need to correct a detail?</Text>
-          <Pressable
-            accessibilityLabel={`Edit ${medication.genericName}`}
-            accessibilityRole="button"
-            onPress={() => onEdit(medication)}
-            style={({ pressed }) => [
-              styles.editButton,
-              pressed && styles.editButtonPressed,
-            ]}
-          >
-            <Text style={styles.editButtonIcon}>↗</Text>
-            <Text style={styles.editButtonText}>Edit medication</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.screen}>
+          <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.content}>
+            <View style={styles.header}>
+              <View style={styles.headerCopy}>
+                <Text style={styles.kicker}>MEDICATION DETAILS</Text>
+                <Text style={styles.title}>{medication.genericName}</Text>
+                <Text style={styles.brand}>{medication.brandName}</Text>
+              </View>
+              <Pressable accessibilityLabel="Close medication details" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
+                <Text style={styles.closeText}>×</Text>
+              </Pressable>
+            </View>
+            <View style={styles.summary}>
+              <Detail label="Dose" value={`${medication.doseAmount} ${medication.dosageForm}`} />
+              <Detail label="Frequency" value={medication.Frequency} />
+              <Detail label="Time" value={medication.time} />
+            </View>
+            {medication.Frequency.toLowerCase().includes("as needed") && (
+              <View style={styles.asNeededNote}>
+                <Text style={styles.asNeededTitle}>What does “as needed” mean?</Text>
+                <Text style={styles.asNeededText}>
+                  Take this dose only when the symptoms or situation it was prescribed
+                  for occurs. Follow the directions from your healthcare professional
+                  for how much to take and how often.
+                </Text>
+              </View>
+            )}
+            {medication.scheduledDate && (
+              <Text style={styles.scheduledDate}>
+                {medication.startDate && medication.endDate
+                  ? `Runs ${medication.startDate} to ${medication.endDate}`
+                  : `Scheduled for ${medication.scheduledDate}`}
+              </Text>
+            )}
+            <Section title="Purpose" values={medication.purposes} />
+            <Section
+              title="Ingredients"
+              values={medication.ingredients.map(({ name, strength }) => `${name} · ${strength} mg`)}
+            />
+            <Section title="Warnings" values={medication.warning} emptyLabel="No warnings recorded." />
+            <Section
+              title="Avoid with conditions"
+              values={medication.avoidWithConditions}
+              emptyLabel="No conditions recorded."
+            />
+            <Section
+              title="Avoid with ingredients"
+              values={medication.avoidWithIngredients}
+              emptyLabel="No interactions recorded."
+            />
+            <Section
+              title="Instructions and notes"
+              values={medication.notes ? [medication.notes] : []}
+              emptyLabel="No additional instructions."
+            />
+            <View style={styles.editArea}>
+              <Text style={styles.editPrompt}>Need to correct a detail?</Text>
+              <Pressable
+                accessibilityLabel={`Edit ${medication.genericName}`}
+                accessibilityRole="button"
+                onPress={() => onEdit(medication)}
+                style={({ pressed }) => [
+                  styles.editButton,
+                  pressed && styles.editButtonPressed,
+                ]}
+              >
+                <Text style={styles.editButtonIcon}>↗</Text>
+                <Text style={styles.editButtonText}>Edit medication</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
@@ -125,6 +130,7 @@ function Section({
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F4F0E5" },
   content: { backgroundColor: "#F4F0E5", flexGrow: 1, padding: 24, paddingBottom: 44 },
   header: { alignItems: "flex-start", backgroundColor: colors.primary, borderRadius: 24, flexDirection: "row", justifyContent: "space-between", marginTop: 12, padding: 22 },
   headerCopy: { flex: 1 },
