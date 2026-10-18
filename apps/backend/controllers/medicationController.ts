@@ -2,8 +2,11 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../src/db/prisma";
 
+const DOSAGE_FORMS = ["tablet", "capsule", "powder", "liquid", "cream", "inhaler"] as const;
+
 const listQuerySchema = z.object({
   search: z.string().trim().min(1).max(100).optional(),
+  dosageForm: z.enum(DOSAGE_FORMS).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -15,24 +18,28 @@ export const listMedications = async (req: Request, res: Response) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.issues });
   }
-  const { search, limit, offset } = parsed.data;
+  const { search, dosageForm, limit, offset } = parsed.data;
 
-  const where = search
-    ? { 
-        OR: [
-          { genericName: { contains: search, mode: "insensitive" as const } },
-          { brandName: { contains: search, mode: "insensitive" as const } },
-          { purposes: { has: search.toLowerCase() } },
-        ],
-      }
-    : {};
+  const where = {
+    ...(dosageForm ? { dosageForm } : {}),
+    ...(search
+      ? {
+          OR: [
+            { genericName: { contains: search, mode: "insensitive" as const } },
+            { brandName: { contains: search, mode: "insensitive" as const } },
+            { ingredients: { some: { name: { contains: search, mode: "insensitive" as const } } } },
+            { purposes: { has: search.toLowerCase() } },
+          ],
+        }
+      : {}),
+  };
 
   try {
     const [medications, total] = await Promise.all([
       prisma.medication.findMany({
         where,
         include: { ingredients: true },
-        orderBy: { genericName: "asc" },
+        orderBy: [{ genericName: "asc" }, { brandName: "asc" }],
         take: limit,
         skip: offset,
       }),
