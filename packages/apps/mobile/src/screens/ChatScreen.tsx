@@ -1,6 +1,6 @@
 import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-screens/experimental';
@@ -12,6 +12,7 @@ import { apiUrl } from '../lib/api';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { PageBackdrop } from '../components/navigation/PageBackdrop';
+import { Clickable } from '../components/ui/Clickable';
 
 export function ChatScreen() {
   const { session } = useAuth();
@@ -97,9 +98,9 @@ export function ChatScreen() {
           <View style={styles.heading}>
             <Text accessibilityRole="header" style={styles.title}>IntelliMed</Text>
           </View>
-          <Pressable accessibilityRole="button" onPress={newChat} style={styles.newChat}>
+          <Clickable accessibilityRole="button" onPress={newChat} style={styles.newChat}>
             <Text style={styles.newChatText}>New chat</Text>
-          </Pressable>
+          </Clickable>
         </View>
         <View style={styles.warning}>
           <Text style={styles.warningText}>AI can be wrong. Check the accuracy of its answers before relying on them.</Text>
@@ -116,10 +117,10 @@ export function ChatScreen() {
               <Text style={styles.emptyTitle}>What’s on your mind?</Text>
               <Text style={styles.emptyText}>Ask about medications, your routine, or questions to bring to your pharmacist.</Text>
               {['Help me understand my medication routine', 'What should I ask my pharmacist?'].map((suggestion) => (
-                <Pressable key={suggestion} accessibilityRole="button" onPress={() => setDraft(suggestion)} style={styles.suggestion}>
+                <Clickable key={suggestion} accessibilityRole="button" onPress={() => setDraft(suggestion)} style={styles.suggestion}>
                   <Text style={styles.suggestionText}>{suggestion}</Text>
                   <Text style={styles.suggestionArrow}>↗</Text>
-                </Pressable>
+                </Clickable>
               ))}
             </View>
           )}
@@ -141,11 +142,11 @@ export function ChatScreen() {
               value={draft} onChangeText={(value) => { setDraft(value); setError(''); }}
               placeholder="Message IntelliMed…" placeholderTextColor={colors.textMuted}
               style={styles.input} textAlignVertical="top" />
-            <Pressable accessibilityRole="button" accessibilityLabel="Send message"
+            <Clickable accessibilityRole="button" accessibilityLabel="Send message"
               accessibilityState={{ disabled: !canSend, busy }} disabled={!canSend} onPress={() => void send()}
               style={({ pressed }) => [styles.sendButton, (!canSend || pressed) && styles.disabled]}>
               <Text style={styles.sendArrow}>↑</Text>
-            </Pressable>
+            </Clickable>
           </View>
         </View>
       </ChatKeyboardAvoidingView>

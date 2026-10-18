@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Clickable } from '../ui/Clickable';
 import { useState } from 'react';
 
 import { getMedicationDisplayStatus, Medication } from '../../types/medication';
@@ -28,7 +29,7 @@ export function MedicationCard({ medication, onMarkTaken, onEditMedication }: Me
           <Text style={styles.dosage}>{medication.dosage}</Text>
           <Text style={styles.time}>{medication.time}</Text>
         </View>
-        <Pressable
+        <Clickable
           accessibilityLabel={
             isMissed
               ? `${medication.genericName} was missed; mark it as taken`
@@ -47,27 +48,27 @@ export function MedicationCard({ medication, onMarkTaken, onEditMedication }: Me
           <Text style={isMissed ? styles.missedText : isTaken ? styles.takenText : styles.takeButtonText}>
             {isMissed ? 'Missed!' : isTaken ? 'Taken' : 'Upcoming'}
           </Text>
-        </Pressable>
+        </Clickable>
       </View>
       <View style={styles.actionRow}>
         {isMissed && (
-          <Pressable
+          <Clickable
             accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
             accessibilityRole="button"
             onPress={() => onMarkTaken(medication.id)}
             style={({ pressed }) => [styles.markTakenButton, pressed && styles.pressed]}
           >
             <Text style={styles.markTakenText}>Mark taken</Text>
-          </Pressable>
+          </Clickable>
         )}
-        <Pressable
+        <Clickable
           accessibilityLabel={`View details for ${medication.genericName}`}
           accessibilityRole="button"
           onPress={() => setIsDetailsVisible(true)}
           style={({ pressed }) => [styles.detailsLink, pressed && styles.pressed]}
         >
           <Text style={styles.detailsLinkText}>Details</Text>
-        </Pressable>
+        </Clickable>
       </View>
       <MedicationDetailsModal
         medication={isDetailsVisible ? medication : null}

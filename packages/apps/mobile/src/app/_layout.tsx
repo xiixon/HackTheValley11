@@ -1,16 +1,13 @@
 import { DefaultTheme, ThemeProvider } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display/400Regular';
-import { useFonts } from 'expo-font';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '../auth/AuthContext';
 import { ProfileMenu } from '../components/navigation/ProfileMenu';
 import { WebTabs } from '../components/navigation/WebTabs';
 import { MedicationProvider } from '../context/MedicationContext';
 import { colors } from '../theme/colors';
-import { headingFont } from '../theme/typography';
 
 const theme = {
   ...DefaultTheme,
@@ -25,16 +22,6 @@ const theme = {
 };
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({ [headingFont]: DMSerifDisplay_400Regular });
-
-  if (!fontsLoaded && !fontError) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.primary} accessibilityLabel="Loading app" />
-      </View>
-    );
-  }
-
   return (
     <AuthProvider>
       <ThemeProvider value={theme}>

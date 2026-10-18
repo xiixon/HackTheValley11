@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   Platform,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
 
 import { useMedications } from '../context/MedicationContext';
 import { PageBackdrop } from '../components/navigation/PageBackdrop';
+import { Clickable } from '../components/ui/Clickable';
 import { colors } from '../theme/colors';
 import { getMedicationDisplayStatus, Medication } from '../types/medication';
 
@@ -161,14 +161,14 @@ export default function HistoryScreen() {
           <Text style={styles.title}>Dose history</Text>
           <Text style={styles.subtitle}>A clear record of your medication routine.</Text>
         </View>
-        <Pressable
+        <Clickable
           accessibilityLabel="Learn about dose history"
           accessibilityRole="button"
           onPress={() => setHelpVisible((visible) => !visible)}
           style={({ pressed }) => [styles.helpButton, pressed && styles.pressed]}
         >
           <Text style={styles.helpText}>?</Text>
-        </Pressable>
+        </Clickable>
       </View>
 
       {helpVisible && (
@@ -190,7 +190,7 @@ export default function HistoryScreen() {
           <Text style={styles.summaryLabel}>SHOWING</Text>
           <Text style={styles.summaryValue}>{filteredEntries.length} recorded doses</Text>
         </View>
-        <Pressable
+        <Clickable
           accessibilityLabel="Export filtered dose history as CSV"
           accessibilityRole="button"
           onPress={exportCsv}
@@ -198,7 +198,7 @@ export default function HistoryScreen() {
         >
           <Text style={styles.exportIcon}>↓</Text>
           <Text style={styles.exportText}>Export CSV</Text>
-        </Pressable>
+        </Clickable>
       </View>
       {!!exportMessage && <Text style={styles.exportMessage}>{exportMessage}</Text>}
 
@@ -213,16 +213,16 @@ export default function HistoryScreen() {
           value={query}
         />
         {!!query && (
-          <Pressable accessibilityLabel="Clear search" accessibilityRole="button" onPress={() => setQuery('')}>
+          <Clickable accessibilityLabel="Clear search" accessibilityRole="button" onPress={() => setQuery('')}>
             <Text style={styles.clearText}>×</Text>
-          </Pressable>
+          </Clickable>
         )}
       </View>
 
       <Text style={styles.filterLabel}>MEDICATION</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
         {medicationTypes.map((type) => (
-          <Pressable
+          <Clickable
             accessibilityRole="button"
             accessibilityState={{ selected: selectedType === type }}
             key={type}
@@ -230,14 +230,14 @@ export default function HistoryScreen() {
             style={[styles.chip, selectedType === type && styles.activeChip]}
           >
             <Text style={[styles.chipText, selectedType === type && styles.activeChipText]}>{type}</Text>
-          </Pressable>
+          </Clickable>
         ))}
       </ScrollView>
 
       <Text style={styles.filterLabel}>DATE RANGE</Text>
       <View style={styles.rangeRow}>
         {([['all', 'All time'], ['7', 'Last 7 days'], ['30', 'Last 30 days']] as const).map(([value, label]) => (
-          <Pressable
+          <Clickable
             accessibilityRole="button"
             accessibilityState={{ selected: dateRange === value }}
             key={value}
@@ -245,7 +245,7 @@ export default function HistoryScreen() {
             style={[styles.rangeButton, dateRange === value && styles.activeRangeButton]}
           >
             <Text style={[styles.rangeText, dateRange === value && styles.activeRangeText]}>{label}</Text>
-          </Pressable>
+          </Clickable>
         ))}
       </View>
 
@@ -265,7 +265,7 @@ export default function HistoryScreen() {
             const status = statusCopy[adherence];
             const isExpanded = expandedId === medication.id;
             return (
-              <Pressable
+              <Clickable
                 accessibilityLabel={`${medication.genericName}, ${status.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
                 accessibilityRole="button"
                 key={medication.id}
@@ -295,7 +295,7 @@ export default function HistoryScreen() {
                   )}
                   <Text style={styles.detailsHint}>{isExpanded ? 'Hide details' : 'View details'} {isExpanded ? '⌃' : '⌄'}</Text>
                 </View>
-              </Pressable>
+              </Clickable>
             );
           })}
         </View>

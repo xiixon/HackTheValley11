@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { typography } from '../theme/typography';
 import type { RegistrationProfile, Sex } from '../../../../shared/src/types/User';
 import { isValidBirthDate } from '../../../../shared/src/validation/profile';
 import { PageBackdrop } from '../components/navigation/PageBackdrop';
+import { Clickable } from '../components/ui/Clickable';
 
 const emptyForm = { firstName: '', lastName: '', email: '', password: '' };
 const fields = [
@@ -124,13 +125,13 @@ export function AuthScreen() {
             <View style={styles.card}>
               <View style={styles.switcher}>
                 {(['login', 'register'] as const).map((option) => (
-                  <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: mode === option, disabled: busy }}
+                  <Clickable key={option} accessibilityRole="button" accessibilityState={{ selected: mode === option, disabled: busy }}
                     disabled={busy} onPress={() => { if (mode === option) return; setMode(option); changeStep('account'); setForm((current) => ({ ...current, password: '' })); setShowPassword(false); }}
                     style={[styles.modeButton, mode === option && styles.modeSelected]}>
                     <Text style={[styles.modeText, mode === option && styles.modeTextSelected]}>
                       {option === 'login' ? 'Sign in' : 'Create account'}
                     </Text>
-                  </Pressable>
+                  </Clickable>
                 ))}
               </View>
               {registering && <Text style={styles.stepLabel}>STEP {aboutYou ? '2' : '1'} OF 2 · {aboutYou ? 'ABOUT YOU' : 'YOUR ACCOUNT'}</Text>}
@@ -154,10 +155,10 @@ export function AuthScreen() {
                         field === 'email' ? () => passwordInput.current?.focus() : undefined}
                       style={styles.input} />
                     {field === 'password' && (
-                      <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                      <Clickable accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                         disabled={busy} onPress={() => setShowPassword((current) => !current)} style={styles.showButton}>
                         <Text style={styles.showText}>{showPassword ? 'Hide' : 'Show'}</Text>
-                      </Pressable>
+                      </Clickable>
                     )}
                   </View>
                 </View>
@@ -168,11 +169,11 @@ export function AuthScreen() {
                   <Text style={styles.label}>Sex</Text>
                   <View style={styles.sexOptions}>
                     {(['male', 'female', 'other'] as const).map((option) => (
-                      <Pressable key={option} accessibilityRole="radio" accessibilityState={{ checked: sex === option, disabled: busy }}
+                      <Clickable key={option} accessibilityRole="radio" accessibilityState={{ checked: sex === option, disabled: busy }}
                         disabled={busy} onPress={() => { setSex(option); setError(''); }}
                         style={[styles.sexOption, sex === option && styles.sexSelected]}>
                         <Text style={[styles.modeText, sex === option && styles.sexSelectedText]}>{option[0].toUpperCase() + option.slice(1)}</Text>
-                      </Pressable>
+                      </Clickable>
                     ))}
                   </View>
                 </View>
@@ -192,16 +193,16 @@ export function AuthScreen() {
                 <Text style={styles.hint}>Separate multiple allergies or conditions with commas. Leave blank if none.</Text>
               </>}
               {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
-              <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }}
+              <Clickable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }}
                 disabled={busy} onPress={() => void submit()}
                 style={({ pressed }) => [styles.submit, (pressed || busy) && styles.submitPressed]}>
                 {busy && <ActivityIndicator color={colors.surface} />}
                 <Text style={styles.submitText}>{busy ? 'Please wait…' : aboutYou ? 'Create account' : registering ? 'Continue' : 'Sign in'}</Text>
-              </Pressable>
-              {aboutYou && <Pressable accessibilityRole="button" disabled={busy}
+              </Clickable>
+              {aboutYou && <Clickable accessibilityRole="button" disabled={busy}
                 onPress={() => changeStep('account')} style={styles.backButton}>
                 <Text style={styles.showText}>Back to account details</Text>
-              </Pressable>}
+              </Clickable>}
             </View>
             <Text style={styles.footer}>Your routine starts with you.</Text>
           </View>

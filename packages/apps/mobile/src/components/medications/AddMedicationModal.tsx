@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import {
 import { Medication, MedicationFormValues } from "../../types/medication";
 import { colors } from "../../theme/colors";
 import { typography } from '../../theme/typography';
+import { Clickable } from '../ui/Clickable';
 
 type AddMedicationModalProps = {
   date: Date;
@@ -181,9 +181,9 @@ export function AddMedicationModal({
                 <Text style={styles.kicker}>{medication ? "EDIT MEDICATION" : `ADD TO ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase()}`}</Text>
                 <Text style={styles.title}>{medication ? "Edit medication" : "New medication"}</Text>
               </View>
-              <Pressable accessibilityLabel="Close add medication form" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
+              <Clickable accessibilityLabel="Close add medication form" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>×</Text>
-              </Pressable>
+              </Clickable>
             </View>
             <Field label="Medication ID" value={values.id} onChangeText={(value) => update("id", value)} placeholder="e.g. lisinopril-10mg" />
             <Field label="Generic name" value={values.genericName} onChangeText={(value) => update("genericName", value)} placeholder="e.g. Lisinopril" />
@@ -205,7 +205,7 @@ export function AddMedicationModal({
                   {weekdayOptions.map(([label, day]) => {
                     const selected = values.selectedWeekdays.includes(day);
                     return (
-                      <Pressable
+                      <Clickable
                         key={`${label}-${day}`}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -213,7 +213,7 @@ export function AddMedicationModal({
                         style={[styles.weekday, selected && styles.weekdaySelected]}
                       >
                         <Text style={[styles.weekdayText, selected && styles.weekdayTextSelected]}>{label}</Text>
-                      </Pressable>
+                      </Clickable>
                     );
                   })}
                 </View>
@@ -228,17 +228,17 @@ export function AddMedicationModal({
                 <View key={`${time}-${index}`} style={styles.timeRow}>
                   <Field label={`Time ${index + 1}`} value={time} onChangeText={(value) => update("reminderTimes", values.reminderTimes.map((item, itemIndex) => itemIndex === index ? value : item))} placeholder="e.g. 8:00 AM" />
                   {values.reminderTimes.length > 1 && (
-                    <Pressable accessibilityLabel={`Remove reminder time ${index + 1}`} accessibilityRole="button" onPress={() => update("reminderTimes", values.reminderTimes.filter((_, itemIndex) => itemIndex !== index))} style={styles.removeTime}>
+                    <Clickable accessibilityLabel={`Remove reminder time ${index + 1}`} accessibilityRole="button" onPress={() => update("reminderTimes", values.reminderTimes.filter((_, itemIndex) => itemIndex !== index))} style={styles.removeTime}>
                       <Text style={styles.removeTimeText}>−</Text>
-                    </Pressable>
+                    </Clickable>
                   )}
                 </View>
               ))}
               <View style={styles.addTimeRow}>
                 <SelectField label="New reminder time" value={newReminderTime || "Choose time"} onPress={openTimePicker} />
-                <Pressable accessibilityLabel="Add reminder time" accessibilityRole="button" disabled={!newReminderTime.trim()}                 onPress={() => { if (!newReminderTime) return; update("reminderTimes", [...values.reminderTimes, newReminderTime]); setNewReminderTime(""); }} style={[styles.addTimeButton, !newReminderTime.trim() && styles.saveButtonDisabled]}>
+                <Clickable accessibilityLabel="Add reminder time" accessibilityRole="button" disabled={!newReminderTime.trim()}                 onPress={() => { if (!newReminderTime) return; update("reminderTimes", [...values.reminderTimes, newReminderTime]); setNewReminderTime(""); }} style={[styles.addTimeButton, !newReminderTime.trim() && styles.saveButtonDisabled]}>
                   <Text style={styles.addTimeText}>+</Text>
-                </Pressable>
+                </Clickable>
               </View>
             </View>
             {!startDateValid && values.startDate.length > 0 && (
@@ -250,16 +250,16 @@ export function AddMedicationModal({
             <View style={styles.row}>
               <View style={styles.half}>
                 <Text style={styles.fieldLabel}>Frequency</Text>
-                <Pressable accessibilityRole="button" accessibilityLabel="Choose medication frequency" onPress={() => setIsFrequencyOpen((open) => !open)} style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}>
+                <Clickable accessibilityRole="button" accessibilityLabel="Choose medication frequency" onPress={() => setIsFrequencyOpen((open) => !open)} style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}>
                   <Text style={styles.selectText}>{values.Frequency}</Text>
                   <Text style={styles.selectChevron}>{isFrequencyOpen ? "▲" : "▼"}</Text>
-                </Pressable>
+                </Clickable>
                 {isFrequencyOpen && (
                   <View style={styles.options}>
                     {frequencyOptions.map((option) => (
-                      <Pressable key={option} onPress={() => { update("Frequency", option); setIsFrequencyOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+                      <Clickable key={option} onPress={() => { update("Frequency", option); setIsFrequencyOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
                         <Text style={styles.optionText}>{option}</Text>
-                      </Pressable>
+                      </Clickable>
                     ))}
                   </View>
                 )}
@@ -285,9 +285,9 @@ export function AddMedicationModal({
             </View>
             <Field label="Purpose (optional)" value={values.purposes[0] ?? ""} onChangeText={(value) => update("purposes", value ? [value] : [])} placeholder="What is it for?" />
             <Field label="Instructions or notes (optional)" value={values.notes} onChangeText={(value) => update("notes", value)} placeholder="e.g. Take with food" multiline />
-            <Pressable accessibilityLabel="Save medication" accessibilityRole="button" disabled={!canSubmit} onPress={submit} style={[styles.saveButton, !canSubmit && styles.saveButtonDisabled]}>
+            <Clickable accessibilityLabel="Save medication" accessibilityRole="button" disabled={!canSubmit} onPress={submit} style={[styles.saveButton, !canSubmit && styles.saveButtonDisabled]}>
               <Text style={styles.saveButtonText}>{medication ? "Save changes" : "Add medication"}</Text>
-            </Pressable>
+            </Clickable>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -349,7 +349,7 @@ function SelectField({
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <Pressable
+      <Clickable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value}`}
         onPress={onPress}
@@ -357,7 +357,7 @@ function SelectField({
       >
         <Text style={styles.selectText}>{value}</Text>
         <Text style={styles.selectChevron}>⌄</Text>
-      </Pressable>
+      </Clickable>
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Clickable } from '../ui/Clickable';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProfileScreen } from '../../screens/ProfileScreen';
@@ -11,19 +12,19 @@ export function ProfileMenu() {
   return (
     <>
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Open your profile" onPress={() => setOpen(true)}
+        <Clickable accessibilityRole="button" accessibilityLabel="Open your profile" onPress={() => setOpen(true)}
           style={({ pressed }) => [styles.userButton, pressed && { opacity: 0.6 }]}>
           <View style={styles.head} />
           <View style={styles.shoulders} />
-        </Pressable>
+        </Clickable>
       </View>
       <Modal visible={open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
         <SafeAreaView style={styles.sheet}>
           <View style={styles.toolbar}>
             <Text style={styles.title}>Account</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close profile" onPress={() => setOpen(false)} style={styles.close}>
+            <Clickable accessibilityRole="button" accessibilityLabel="Close profile" onPress={() => setOpen(false)} style={styles.close}>
               <Text style={styles.closeText}>Done</Text>
-            </Pressable>
+            </Clickable>
           </View>
           <ProfileScreen />
         </SafeAreaView>

@@ -1,6 +1,5 @@
 import {
   Modal,
-  Pressable,
   ScrollView,
   Alert,
   StyleSheet,
@@ -19,6 +18,7 @@ import { typography } from "../../theme/typography";
 import { AddMedicationModal } from "../medications/AddMedicationModal";
 import { MedicationDetailsModal } from "../medications/MedicationDetailsModal";
 import { PageBackdrop } from "../navigation/PageBackdrop";
+import { Clickable } from "../ui/Clickable";
 
 type ScheduleProps = {
   medicationsByDate: Record<string, Medication[]>;
@@ -149,7 +149,7 @@ export function Schedule({
             const summary = getDaySummary(date);
 
             return (
-              <Pressable
+              <Clickable
                 accessibilityLabel={`Select ${label} ${number}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isActive }}
@@ -183,7 +183,7 @@ export function Schedule({
                     ]}
                   />
                 )}
-              </Pressable>
+              </Clickable>
             );
           })}
         </View>
@@ -194,7 +194,7 @@ export function Schedule({
             <Text style={styles.sectionSubtitle}>{selectedDateLabel}</Text>
           </View>
           <View style={styles.headerActions}>
-            <Pressable
+            <Clickable
               accessibilityLabel={`Add medication for ${selectedDateLabel}`}
               accessibilityRole="button"
               onPress={() => setIsAddMedicationVisible(true)}
@@ -204,8 +204,8 @@ export function Schedule({
               ]}
             >
               <Text style={styles.addHeaderButtonText}>+ Add</Text>
-            </Pressable>
-            <Pressable
+            </Clickable>
+            <Clickable
               accessibilityLabel="Open date picker"
               accessibilityRole="button"
               onPress={() => {
@@ -220,7 +220,7 @@ export function Schedule({
               ]}
             >
               <Text style={styles.calendarLabel}>Change day</Text>
-            </Pressable>
+            </Clickable>
           </View>
         </View>
 
@@ -281,7 +281,7 @@ export function Schedule({
                   </View>
                 </View>
                 <View style={styles.actionColumn}>
-                  <Pressable
+                  <Clickable
                     accessibilityLabel={
                       isMissed
                         ? `${medication.genericName} was missed; mark it as taken`
@@ -312,9 +312,9 @@ export function Schedule({
                     >
                       {isMissed ? "Missed" : isTaken ? "Taken" : "Upcoming"}
                     </Text>
-                  </Pressable>
+                  </Clickable>
                   {isMissed && (
-                    <Pressable
+                    <Clickable
                       accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
                       accessibilityRole="button"
                       onPress={() => onCycleMedicationStatus(medication.id)}
@@ -324,9 +324,9 @@ export function Schedule({
                       ]}
                     >
                       <Text style={styles.markTakenButtonText}>Mark taken</Text>
-                    </Pressable>
+                    </Clickable>
                   )}
-                  <Pressable
+                  <Clickable
                     accessibilityLabel={`View details for ${medication.genericName}`}
                     accessibilityRole="button"
                     onPress={() => setDetailsMedication(medication)}
@@ -336,8 +336,8 @@ export function Schedule({
                     ]}
                   >
                     <Text style={styles.detailsButtonText}>Details</Text>
-                  </Pressable>
-                  <Pressable
+                  </Clickable>
+                  <Clickable
                     accessibilityLabel={`Delete ${medication.genericName} scheduled dose`}
                     accessibilityRole="button"
                     onPress={() =>
@@ -360,7 +360,7 @@ export function Schedule({
                     ]}
                   >
                     <Text style={styles.deleteButtonText}>Delete</Text>
-                  </Pressable>
+                  </Clickable>
                 </View>
               </View>
             );
@@ -373,7 +373,7 @@ export function Schedule({
               <Text style={styles.emptyStateText}>
                 No medications have been added for this day yet.
               </Text>
-              <Pressable
+              <Clickable
                 accessibilityLabel={`Add medication for ${selectedDateLabel}`}
                 accessibilityRole="button"
                 onPress={() => setIsAddMedicationVisible(true)}
@@ -381,7 +381,7 @@ export function Schedule({
               >
                 <Text style={styles.addButtonText}>Add medication</Text>
                 <Text style={styles.addButtonIcon}>+</Text>
-              </Pressable>
+              </Clickable>
             </View>
           )}
         </View>
@@ -392,7 +392,7 @@ export function Schedule({
           visible={isCalendarVisible}
         >
           <View style={styles.modalOverlay}>
-            <Pressable
+            <Clickable
               accessibilityLabel="Close date picker"
               accessibilityRole="button"
               onPress={() => setIsCalendarVisible(false)}
@@ -404,7 +404,7 @@ export function Schedule({
                   <Text style={styles.modalKicker}>SELECT A DAY</Text>
                   <Text style={styles.modalTitle}>Your schedule</Text>
                 </View>
-                <Pressable
+                <Clickable
                   accessibilityLabel="Close date picker"
                   accessibilityRole="button"
                   onPress={() => setIsCalendarVisible(false)}
@@ -414,31 +414,31 @@ export function Schedule({
                   ]}
                 >
                   <Text style={styles.closeButtonText}>×</Text>
-                </Pressable>
+                </Clickable>
               </View>
               <View style={styles.monthHeader}>
-                <Pressable
+                <Clickable
                   accessibilityLabel="Previous month"
                   accessibilityRole="button"
                   onPress={() => changeMonth(-1)}
                   style={styles.monthArrow}
                 >
                   <Text style={styles.monthArrowText}>‹</Text>
-                </Pressable>
+                </Clickable>
                 <Text style={styles.modalMonth}>
                   {calendarMonth.toLocaleDateString(undefined, {
                     month: "long",
                     year: "numeric",
                   })}
                 </Text>
-                <Pressable
+                <Clickable
                   accessibilityLabel="Next month"
                   accessibilityRole="button"
                   onPress={() => changeMonth(1)}
                   style={styles.monthArrow}
                 >
                   <Text style={styles.monthArrowText}>›</Text>
-                </Pressable>
+                </Clickable>
               </View>
               <View style={styles.weekdayRow}>
                 {weekdays.map((weekday) => (
@@ -462,7 +462,7 @@ export function Schedule({
                   });
 
                   return (
-                    <Pressable
+                    <Clickable
                       accessibilityLabel={`Select ${label}`}
                       accessibilityRole="button"
                       accessibilityState={{ selected: isActive }}
@@ -497,11 +497,11 @@ export function Schedule({
                           ]}
                         />
                       )}
-                    </Pressable>
+                    </Clickable>
                   );
                 })}
               </View>
-              <Pressable
+              <Clickable
                 accessibilityLabel="Keep current date"
                 accessibilityRole="button"
                 onPress={() => setIsCalendarVisible(false)}
@@ -511,7 +511,7 @@ export function Schedule({
                 ]}
               >
                 <Text style={styles.doneButtonText}>Done</Text>
-              </Pressable>
+              </Clickable>
             </View>
           </View>
         </Modal>
@@ -670,20 +670,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 18,
-    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
   headerActions: {
     alignItems: "center",
     flexDirection: "row",
-    marginLeft: 8,
+    marginLeft: 12,
   },
   addHeaderButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: 14,
     justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: 11,
+    minHeight: 44,
+    paddingHorizontal: 10,
   },
   addHeaderButtonText: {
     color: colors.primary,
@@ -693,7 +693,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.heading,
     color: colors.text,
-    fontSize: 27,
+    fontSize: 24,
+    lineHeight: 29,
   },
   sectionSubtitle: {
     color: colors.textMuted,
@@ -706,7 +707,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: "center",
     marginLeft: 12,
-    minHeight: 50,
+    minHeight: 44,
     paddingHorizontal: 10,
   },
   calendarIcon: {
@@ -715,7 +716,7 @@ const styles = StyleSheet.create({
   },
   calendarLabel: {
     color: colors.primary,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "800",
   },
   calendarButtonPressed: {

@@ -1,9 +1,10 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { Medication } from "../../types/medication";
 import { colors } from "../../theme/colors";
 import { typography } from "../../theme/typography";
+import { Clickable } from "../ui/Clickable";
 
 type MedicationDetailsModalProps = {
   medication: Medication | null;
@@ -29,9 +30,9 @@ export function MedicationDetailsModal({
                 <Text style={styles.title}>{medication.genericName}</Text>
                 <Text style={styles.brand}>{medication.brandName}</Text>
               </View>
-              <Pressable accessibilityLabel="Close medication details" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
+              <Clickable accessibilityLabel="Close medication details" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>×</Text>
-              </Pressable>
+              </Clickable>
             </View>
             <View style={styles.summary}>
               <Detail label="Dose" value={`${medication.doseAmount} ${medication.dosageForm}`} />
@@ -78,7 +79,7 @@ export function MedicationDetailsModal({
             />
             <View style={styles.editArea}>
               <Text style={styles.editPrompt}>Need to correct a detail?</Text>
-              <Pressable
+              <Clickable
                 accessibilityLabel={`Edit ${medication.genericName}`}
                 accessibilityRole="button"
                 onPress={() => onEdit(medication)}
@@ -89,7 +90,7 @@ export function MedicationDetailsModal({
               >
                 <Text style={styles.editButtonIcon}>↗</Text>
                 <Text style={styles.editButtonText}>Edit medication</Text>
-              </Pressable>
+              </Clickable>
             </View>
           </ScrollView>
         </SafeAreaView>

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@expo-google-fonts/dm-serif-display": "^0.4.2",
     "@expo/log-box": "~57.0.4",
     "@expo/metro-runtime": "~57.0.17",
     "@react-native-community/datetimepicker": "9.1.0",

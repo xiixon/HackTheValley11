@@ -1,4 +1,5 @@
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Clickable } from '../components/ui/Clickable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../auth/AuthContext';
@@ -22,10 +23,10 @@ export function ProfileScreen() {
           <Text style={styles.email}>{user.email}</Text>
           <View style={styles.badge}><Text style={styles.badgeText}>Signed in</Text></View>
         </View>
-        <Pressable accessibilityRole="button" onPress={signOut}
+        <Clickable accessibilityRole="button" onPress={signOut}
           style={({ pressed }) => [styles.button, pressed && { opacity: 0.6 }]}>
           <Text style={styles.buttonText}>Sign out</Text>
-        </Pressable>
+        </Clickable>
       </ScrollView>
     </PillBackground>
   );
