@@ -23,15 +23,6 @@ cd apps/backend
 npm install
 ```
 
-Create a file named `.env` under `apps/backend/` with the following:
-
-```
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require"
-JWT_SECRET="a-long-random-string"
-```
-
-Note: Do not share these values publicly.
-
 ## 3. Set up the database and create the Prisma client
 
 ```bash
