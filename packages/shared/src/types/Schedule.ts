@@ -2,7 +2,9 @@
 export type ScheduleTime = string; // "HH:mm", 24-hour format (needs to be validated)
 export type ScheduleDate = string; // "YYYY-MM-DD" (also needs to be validated)
 
-export type ScheduleFrequency = "daily" | "weekly";
+export type ScheduleFrequency =
+  | "daily" | "weekly" | "selected_days" | "every_n_days"
+  | "monthly" | "once" | "as_needed" | "once_daily";
 
 export type DayOfWeek =
   | "sunday"

@@ -1,22 +1,19 @@
-import { createContext, type PropsWithChildren, useContext, useState } from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useState } from 'react';
 import { apiUrl } from '../lib/api';
 import type { RegistrationProfile } from '../../../../shared/src/types/User';
 
 type Credentials = { email: string; password: string; firstName?: string; lastName?: string; profile?: RegistrationProfile };
-type Session = {
-  token: string;
-  user: { id: string; firstName: string; lastName: string; email: string };
-};
+type Session = { token: string; user: { id: string; firstName: string; lastName: string; email: string } };
 type Auth = {
   session: Session | null;
   authenticate: (mode: 'login' | 'register', details: Credentials) => Promise<void>;
   signOut: () => void;
+  authenticatedFetch: (path: string, options?: RequestInit) => Promise<Response>;
 };
 
 const AuthContext = createContext<Auth | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  // Keep this project's session in memory. Relaunching requires signing in again.
   const [session, setSession] = useState<Session | null>(null);
 
   async function authenticate(mode: 'login' | 'register', details: Credentials) {
@@ -51,8 +48,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }
 
+  const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+    if (!session) throw new Error('You must be signed in to access medication data.');
+    const headers = new Headers(options.headers);
+    headers.set('Authorization', ['Bearer', session.token].join(' '));
+    if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    const response = await fetch(`${apiUrl}${path}`, { ...options, headers });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.errors?.join?.(', ') || body?.error || `Request failed (${response.status})`);
+    }
+    return response;
+  }, [session]);
+
   return (
-    <AuthContext.Provider value={{ session, authenticate, signOut: () => setSession(null) }}>
+    <AuthContext.Provider value={{ session, authenticate, signOut: () => setSession(null), authenticatedFetch }}>
       {children}
     </AuthContext.Provider>
   );

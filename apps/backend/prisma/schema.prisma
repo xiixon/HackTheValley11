@@ -87,6 +87,12 @@ model Profile {
 enum ScheduleFrequency {
   daily
   weekly
+  selected_days
+  every_n_days
+  monthly
+  once
+  as_needed
+  once_daily
 }  
 
 model HealthCondition {
@@ -110,8 +116,11 @@ model Schedule {
   isActive     Boolean    @default(true)
   frequency     ScheduleFrequency @default(daily)
   daysOfWeek     String[]
+  intervalDays   Int?
   timezone     String     @default("UTC")
+  metadata     Json?
   reminderLogs     ReminderLog[]
+  doseLogs       DoseLog[]
 }
 
 model PushToken {
@@ -129,6 +138,17 @@ model ReminderLog {
   localDate     String
   time     String
   sentAt     DateTime @default(now())
+
+  @@unique([scheduleId, localDate, time])
+}
+
+model DoseLog {
+  id         String   @id @default(uuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  localDate  String
+  time       String
+  takenAt    DateTime?
 
   @@unique([scheduleId, localDate, time])
 }

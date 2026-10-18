@@ -26,7 +26,6 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 app.use("/auth", authRoutes);
-app.use("/schedules", schedulesRouter);
 app.use("/push-tokens", requireAuth, pushTokensRouter);
 app.use("/profile", profileRoutes);
 app.use("/schedules", requireAuth, schedulesRouter);

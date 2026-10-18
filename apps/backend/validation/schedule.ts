@@ -1,10 +1,10 @@
 import {
   hasValidDateRange,
-  hasValidDays,
   hasValidTimes,
 } from "../../../packages/shared/src/types/Schedule.js";
 
 const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const FREQUENCIES = ["daily", "weekly", "selected_days", "every_n_days", "monthly", "once", "as_needed", "once_daily"];
 
 function isValidTimezone(tz: unknown): boolean {
   if (typeof tz !== "string") return false;
@@ -36,18 +36,25 @@ export function validateScheduleInput(input: Record<string, any>): string[] {
   }
 
   // frequency and days
-  if (input.frequency !== "daily" && input.frequency !== "weekly") {
-    errors.push('frequency must be "daily" or "weekly"');
+  if (!FREQUENCIES.includes(input.frequency)) {
+    errors.push(`frequency must be one of ${FREQUENCIES.join(", ")}`);
   } else {
     const days = input.daysOfWeek ?? [];
     if (!Array.isArray(days) || !days.every((d: unknown) => DAYS.includes(d as string))) {
       errors.push("daysOfWeek must be lowercase day names, for example monday");
     } else {
-      if (!hasValidDays(input.frequency, days)) errors.push("weekly schedules need at least one day");
-      if (input.frequency === "daily" && days.length > 0) {
-        errors.push("daily schedules must not include daysOfWeek");
+      if (["weekly", "selected_days"].includes(input.frequency) && days.length === 0) {
+        errors.push("weekly and selected-day schedules need at least one day");
+      }
+      if (!["weekly", "selected_days"].includes(input.frequency) && days.length > 0) {
+        errors.push("this frequency must not include daysOfWeek");
       }
     }
+  }
+
+  if (input.frequency === "every_n_days" &&
+      (!Number.isInteger(input.intervalDays) || input.intervalDays < 1)) {
+    errors.push("intervalDays must be a positive integer for every_n_days schedules");
   }
 
   // timezone

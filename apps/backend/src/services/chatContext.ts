@@ -24,7 +24,7 @@ export async function getChatContext(userId: string): Promise<ChatHealthContext 
     profile: user.profile,
     schedules: user.schedules.map(({ medication, ...schedule }) => ({
       ...schedule, medication: medication.genericName,
-      dosageForm: medication.dosageForm, doseAmount: medication.doseAmount,
+      dosageForm: medication.dosageForm,       doseAmount: medication.doseAmount ?? 0,
     })),
   };
 }
