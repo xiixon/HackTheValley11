@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "../routes/auth"
 import profileRoutes from "../routes/profile"
 import schedulesRouter from "../routes/schedules"
+import medicationRoutes from "../routes/medications";
 import { requireAuth } from "../middleware/auth"
 import { startReminderJob } from "../jobs/reminderJob"
 import pushTokensRouter from "../routes/pushTokens"
@@ -29,6 +30,7 @@ app.use("/schedules", schedulesRouter);
 app.use("/push-tokens", requireAuth, pushTokensRouter);
 app.use("/profile", profileRoutes);
 app.use("/schedules", requireAuth, schedulesRouter);
+app.use("/medications", medicationRoutes);
 app.use("/chat", requireAuth, createChatRouter({ getContext: getChatContext }));
 
 app.get("/health", (_req, res) => {
