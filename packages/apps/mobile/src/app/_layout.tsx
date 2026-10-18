@@ -3,23 +3,14 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import type * as NotificationsModule from 'expo-notifications';
 
 import { AuthProvider, useAuth } from '../auth/AuthContext';
 import { ProfileMenu } from '../components/navigation/ProfileMenu';
 import { WebTabs } from '../components/navigation/WebTabs';
 import { MedicationProvider } from '../context/MedicationContext';
 import { colors } from '../theme/colors';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
 
 const theme = {
   ...DefaultTheme,
@@ -49,12 +40,27 @@ function Navigation() {
   const signedIn = !!session;
 
   useEffect(() => {
-    if (!signedIn || Platform.OS === 'web') return;
+    if (
+      !signedIn ||
+      Platform.OS === 'web' ||
+      Constants.appOwnership === 'expo'
+    ) return;
     let active = true;
-    const registerNotifications = async () => {
+    const notifications = async () => {
+      const Notifications: typeof NotificationsModule = await import('expo-notifications');
+      if (!active) return;
+
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
       const permissions = await Notifications.getPermissionsAsync();
       const granted = permissions.granted || (await Notifications.requestPermissionsAsync()).granted;
-      if (!granted || !active) return;
+      if (!granted || !active) return undefined;
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('medication-reminders', {
           name: 'Medication reminders',
@@ -70,23 +76,29 @@ function Navigation() {
         projectId: Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId,
       })).data;
       await authenticatedFetch('/push-tokens', { method: 'POST', body: JSON.stringify({ token }) });
-    };
-    void registerNotifications().catch((error) => console.warn('Unable to register medication notifications', error));
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (response.actionIdentifier !== 'snooze') return;
-      const content = response.notification.request.content;
-      void Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${content.title ?? 'Medication'} (snoozed)`,
-          body: content.body ?? undefined,
-          data: { ...content.data, snoozed: true },
-          sound: content.sound ?? undefined,
-          categoryIdentifier: content.categoryIdentifier ?? undefined,
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 600 },
+
+      const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+        if (response.actionIdentifier !== 'snooze') return;
+        const content = response.notification.request.content;
+        void Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${content.title ?? 'Medication'} (snoozed)`,
+            body: content.body ?? undefined,
+            data: { ...content.data, snoozed: true },
+            sound: content.sound ?? undefined,
+            categoryIdentifier: content.categoryIdentifier ?? undefined,
+          },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 600 },
+        });
       });
-    });
-    return () => { active = false; responseSubscription.remove(); };
+
+      return responseSubscription;
+    };
+    let responseSubscription: { remove: () => void } | undefined;
+    void notifications()
+      .then((subscription) => { responseSubscription = subscription; })
+      .catch((error) => console.warn('Unable to register medication notifications', error));
+    return () => { active = false; responseSubscription?.remove(); };
   }, [authenticatedFetch, signedIn]);
 
   return (
