@@ -1,12 +1,12 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { PillBackground } from '../components/PillBackground';
 import { typography } from '../theme/typography';
+import { PageBackdrop } from '../components/navigation/PageBackdrop';
 
 export function PlaceholderScreen({ title }: { title: string }) {
   return (
-    <PillBackground>
+    <PageBackdrop>
       <ScrollView
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
@@ -14,7 +14,7 @@ export function PlaceholderScreen({ title }: { title: string }) {
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>This section is coming next.</Text>
       </ScrollView>
-    </PillBackground>
+    </PageBackdrop>
   );
 }
 

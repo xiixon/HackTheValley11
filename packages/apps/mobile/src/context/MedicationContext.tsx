@@ -81,6 +81,10 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
             ? {
                 ...medication,
                 status: medication.status === "upcoming" ? "taken" : "upcoming",
+                takenAt:
+                  medication.status === "upcoming"
+                    ? new Date().toISOString()
+                    : undefined,
               }
             : medication,
         );
@@ -128,6 +132,7 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
                 ...medication,
                 scheduledDate: item.scheduledDate ?? dateKey,
                 status: item.status,
+                takenAt: item.takenAt,
                 dosage: `${medication.doseAmount} ${medication.dosageForm}`,
               }
             : item,

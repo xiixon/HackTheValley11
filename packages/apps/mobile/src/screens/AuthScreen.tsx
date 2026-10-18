@@ -7,10 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../auth/AuthContext';
 import { colors } from '../theme/colors';
-import { PillBackground } from '../components/PillBackground';
 import { typography } from '../theme/typography';
 import type { RegistrationProfile, Sex } from '../../../../shared/src/types/User';
 import { isValidBirthDate } from '../../../../shared/src/validation/profile';
+import { PageBackdrop } from '../components/navigation/PageBackdrop';
 
 const emptyForm = { firstName: '', lastName: '', email: '', password: '' };
 const fields = [
@@ -102,7 +102,7 @@ export function AuthScreen() {
   }
 
   return (
-    <PillBackground>
+    <PageBackdrop variant="neutral">
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView ref={scrollView} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
           contentContainerStyle={[styles.content, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 }]}>
@@ -207,7 +207,7 @@ export function AuthScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </PillBackground>
+    </PageBackdrop>
   );
 }
 

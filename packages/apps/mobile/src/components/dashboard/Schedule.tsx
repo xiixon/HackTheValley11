@@ -16,9 +16,9 @@ import {
 } from "../../types/medication";
 import { colors } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { PillBackground } from "../PillBackground";
 import { AddMedicationModal } from "../medications/AddMedicationModal";
 import { MedicationDetailsModal } from "../medications/MedicationDetailsModal";
+import { PageBackdrop } from "../navigation/PageBackdrop";
 
 type ScheduleProps = {
   medicationsByDate: Record<string, Medication[]>;
@@ -115,7 +115,7 @@ export function Schedule({
   };
 
   return (
-    <PillBackground>
+    <PageBackdrop variant="schedule">
       <ScrollView
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
@@ -540,7 +540,7 @@ export function Schedule({
           visible={editingMedication !== null}
         />
       </ScrollView>
-    </PillBackground>
+    </PageBackdrop>
   );
 }
 

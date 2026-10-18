@@ -11,6 +11,7 @@ export type Medication = SharedMedication & {
   time: string;
   scheduledDate?: string;
   status: MedicationStatus;
+  takenAt?: string;
   color: string;
   startDate?: string;
   endDate?: string;

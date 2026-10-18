@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const tabs = [
-  ['index', 'Today', '⌂'], ['schedule', 'Schedule', '▦'], ['medications', 'Meds', '✚'],
+  ['index', 'Today', '⌂'], ['schedule', 'Schedule', '▦'],
   ['chat', 'IntelliMed', '✦'], ['history', 'History', '◷'],
 ] as const;
 

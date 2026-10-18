@@ -10,8 +10,8 @@ import { useAuth } from '../auth/AuthContext';
 import { useMedications } from '../context/MedicationContext';
 import { apiUrl } from '../lib/api';
 import { colors } from '../theme/colors';
-import { PillBackground } from '../components/PillBackground';
 import { typography } from '../theme/typography';
+import { PageBackdrop } from '../components/navigation/PageBackdrop';
 
 export function ChatScreen() {
   const { session } = useAuth();
@@ -91,7 +91,7 @@ export function ChatScreen() {
 
   const canSend = !!draft.trim() && !busy;
   const conversation = (
-    <PillBackground>
+    <PageBackdrop variant="chat">
       <ChatKeyboardAvoidingView>
         <View style={styles.header}>
           <View style={styles.heading}>
@@ -149,7 +149,7 @@ export function ChatScreen() {
           </View>
         </View>
       </ChatKeyboardAvoidingView>
-    </PillBackground>
+    </PageBackdrop>
   );
   return Platform.OS === 'web' ? conversation : (
     <SafeAreaView edges={{ bottom: true }} style={styles.screen}>{conversation}</SafeAreaView>
@@ -174,7 +174,7 @@ function ChatKeyboardAvoidingView({ children }: PropsWithChildren) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   conversationShell: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   heading: { flex: 1, gap: 4 },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   messageText: { color: colors.text, fontSize: 16, lineHeight: 25 },
   userText: { color: colors.surface },
   typing: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  composer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, gap: 10, backgroundColor: colors.background },
+  composer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, gap: 10, backgroundColor: 'transparent' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 7, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 26, gap: 8 },
   input: { flex: 1, minWidth: 0, minHeight: 42, maxHeight: 130, paddingVertical: 10, paddingHorizontal: 12, fontSize: 16, lineHeight: 23, color: colors.text },
   sendButton: { minHeight: 44, minWidth: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
