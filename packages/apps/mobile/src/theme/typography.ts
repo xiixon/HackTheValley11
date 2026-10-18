@@ -1,4 +1,4 @@
-export const headingFont = 'serif';
+export const headingFont = 'DMSerifDisplay_400Regular';
 
 export const typography = {
   heading: {

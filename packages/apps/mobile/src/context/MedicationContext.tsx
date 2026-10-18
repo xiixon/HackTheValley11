@@ -1,34 +1,15 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useNow } from '../hooks/useNow';
+import { dateKey, expand, frequencyMap, time24, type BackendSchedule } from '../lib/schedulePresentation';
+import { useMedicationNotifications } from '../notifications/useMedicationNotifications';
 import { useAuth } from "../auth/AuthContext";
 import { Medication, MedicationFormValues } from "../types/medication";
 
-type BackendSchedule = {
-  id: string;
-  medication: {
-    id: string;
-    genericName: string;
-    brandName: string;
-    ingredients: { name: string; strengthMg?: number; strength?: number }[];
-    purposes: string[];
-    dosageForm: MedicationFormValues["dosageForm"];
-    frequency?: string | null;
-    doseAmount?: number | null;
-    warning: string[];
-    avoidWithConditions: string[];
-    avoidWithIngredients: string[];
-  };
-  times: string[];
-  startDate: string;
-  endDate?: string | null;
-  frequency: string;
-  daysOfWeek: string[];
-  intervalDays?: number | null;
-  metadata?: { color?: string; notes?: string; reminderTimes?: string[]; selectedWeekdays?: number[]; notificationOffsets?: number[]; notificationSound?: 'default' | 'silent' } | null;
-  doseLogs: { localDate: string; time: string; takenAt?: string | null }[];
-};
 
 type MedicationContextValue = {
   medicationsByDate: Record<string, Medication[]>;
+  now: Date;
+  pendingIds: ReadonlySet<string>;
   cycleMedicationStatus: (id: string) => Promise<void>;
   addMedication: (date: Date, medication: MedicationFormValues) => Promise<void>;
   updateMedication: (id: string, medication: MedicationFormValues) => Promise<void>;
@@ -38,127 +19,59 @@ type MedicationContextValue = {
   retry: () => Promise<void>;
 };
 
-const MedicationContext = createContext<MedicationContextValue | undefined>(undefined);
 const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-const frequencyMap: Record<string, string> = {
-  Daily: "daily", Weekly: "weekly", "Selected days": "selected_days",
-  "Every N days": "every_n_days", Monthly: "monthly", Once: "once", "As needed": "as_needed",
-};
 
-function dateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function time24(value: string) {
-  const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!match) return value;
-  let hour = Number(match[1]) % 12;
-  if (match[3].toUpperCase() === "PM") hour += 12;
-  return `${String(hour).padStart(2, "0")}:${match[2] ?? "00"}`;
-}
-
-function time12(value: string) {
-  const [hours, minutes] = value.split(":").map(Number);
-  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
-}
-
-function mapMedication(schedule: BackendSchedule): MedicationFormValues {
-  const medication = schedule.medication;
-  return {
-    id: medication.id,
-    genericName: medication.genericName,
-    brandName: medication.brandName,
-    ingredients: medication.ingredients.map((ingredient) => ({
-      name: ingredient.name,
-      strength: ingredient.strength ?? ingredient.strengthMg ?? 0,
-    })),
-    purposes: medication.purposes,
-    dosageForm: medication.dosageForm,
-    Frequency: medication.frequency ?? schedule.frequency,
-    doseAmount: medication.doseAmount ?? 0,
-    warning: medication.warning,
-    avoidWithConditions: medication.avoidWithConditions,
-    avoidWithIngredients: medication.avoidWithIngredients,
-    time: schedule.times[0] ? time12(schedule.times[0]) : "12:00 AM",
-    color: schedule.metadata?.color ?? "#6D8D78",
-    startDate: schedule.startDate,
-    endDate: schedule.endDate ?? schedule.startDate,
-    notes: schedule.metadata?.notes ?? "",
-    reminderTimes: schedule.metadata?.reminderTimes?.map(time12) ?? schedule.times.map(time12),
-    notificationOffsets: schedule.metadata?.notificationOffsets ?? [0],
-    notificationSound: schedule.metadata?.notificationSound ?? "default",
-    selectedWeekdays: schedule.metadata?.selectedWeekdays ?? schedule.daysOfWeek.map((day) => dayNames.indexOf(day)),
-    intervalDays: schedule.intervalDays ?? 1,
-  };
-}
-
-function expand(schedule: BackendSchedule) {
-  const output: Record<string, Medication[]> = {};
-  const start = new Date(`${schedule.startDate}T12:00:00`);
-  const end = new Date(`${schedule.endDate ?? schedule.startDate}T12:00:00`);
-  const frequency = schedule.frequency;
-  const selectedDays = schedule.metadata?.selectedWeekdays ?? schedule.daysOfWeek.map((day) => dayNames.indexOf(day));
-  for (const current = new Date(start); current <= end && Object.keys(output).length < 366; current.setDate(current.getDate() + 1)) {
-    const day = current.getDay();
-    const include = frequency === "daily" || frequency === "once_daily" || frequency === "as_needed" ||
-      (frequency === "weekly" || frequency === "selected_days") && selectedDays.includes(day) ||
-      frequency === "every_n_days" && Math.round((current.getTime() - start.getTime()) / 86400000) % (schedule.intervalDays ?? 1) === 0 ||
-      frequency === "monthly" && current.getDate() === start.getDate() ||
-      frequency === "once" && current.toDateString() === start.toDateString();
-    if (!include) continue;
-    const key = dateKey(current);
-    output[key] = (schedule.times.length ? schedule.times : ["00:00"]).map((time) => {
-      const taken = schedule.doseLogs.find((log) => log.localDate === key && log.time === time);
-      return {
-        ...mapMedication(schedule),
-        id: `${schedule.id}|${key}|${encodeURIComponent(time)}`,
-        time: time12(time),
-        scheduledDate: key,
-        status: taken ? "taken" : "upcoming",
-        takenAt: taken?.takenAt ?? undefined,
-        dosage: `${schedule.medication.doseAmount ?? 0} ${schedule.medication.dosageForm}`,
-        color: schedule.metadata?.color ?? "#6D8D78",
-      };
-    });
-  }
-  return output;
-}
+const MedicationContext = createContext<MedicationContextValue | undefined>(undefined);
 
 export function MedicationProvider({ children }: { children: ReactNode }) {
   const { session, authenticatedFetch } = useAuth();
+  const now = useNow();
+  const today = dateKey(now);
+  const requestVersion = useRef(0);
+  const locks = useRef(new Set<string>());
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [schedules, setSchedules] = useState<BackendSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  useMedicationNotifications(schedules);
 
   const retry = useCallback(async () => {
-    if (!session) { setSchedules([]); setLoading(false); return; }
+    const version = ++requestVersion.current;
+    if (!session) { setSchedules([]); setLoading(false); setError(null); return; }
     setLoading(true); setError(null);
     try {
       const response = await authenticatedFetch("/schedules");
-      setSchedules(await response.json());
+      const data = await response.json();
+      if (version === requestVersion.current) setSchedules(data);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to load medication schedules.");
-    } finally { setLoading(false); }
+      if (version === requestVersion.current) setError(cause instanceof Error ? cause.message : "Unable to load medication schedules.");
+    } finally { if (version === requestVersion.current) setLoading(false); }
   }, [authenticatedFetch, session]);
   // This effect synchronizes the provider with the authenticated session.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void retry(); }, [retry]);
 
-  const medicationsByDate = useMemo(() => schedules.reduce<Record<string, Medication[]>>((all, schedule) => {
-    Object.entries(expand(schedule)).forEach(([key, values]) => { all[key] = [...(all[key] ?? []), ...values]; });
+  const medicationsByDate = useMemo(() => {
+    const all = schedules.reduce<Record<string, Medication[]>>((result, schedule) => {
+      Object.entries(expand(schedule, new Date(`${today}T12:00:00`))).forEach(([key, values]) => { result[key] = [...(result[key] ?? []), ...values]; });
+      return result;
+    }, {});
+    Object.values(all).forEach(medications => medications.sort((a, b) => time24(a.time).localeCompare(time24(b.time))));
     return all;
-  }, {}), [schedules]);
+  }, [schedules, today]);
 
   const formPayload = (date: Date, medication: MedicationFormValues) => ({
     medicationId: medication.id,
-    times: (medication.reminderTimes.length ? medication.reminderTimes : [medication.time]).map(time24),
+    times: [...new Set((medication.reminderTimes.length ? medication.reminderTimes : [medication.time]).map(time24))].sort(),
     startDate: medication.startDate || dateKey(date),
-    endDate: medication.endDate || medication.startDate || dateKey(date),
+    endDate: medication.endDate || null,
     frequency: frequencyMap[medication.Frequency] ?? "daily",
-    daysOfWeek: medication.selectedWeekdays.map((day) => dayNames[day]),
+    daysOfWeek: ["Weekly", "Selected days"].includes(medication.Frequency) ? medication.selectedWeekdays.map((day) => dayNames[day]) : [],
     intervalDays: medication.intervalDays,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     metadata: {
+      doseAmount: medication.doseAmount,
+      catalogMedicationId: medication.catalogMedicationId,
       color: medication.color,
       notes: medication.notes,
       reminderTimes: medication.reminderTimes,
@@ -168,36 +81,56 @@ export function MedicationProvider({ children }: { children: ReactNode }) {
     },
   });
   const addMedication = useCallback(async (date: Date, medication: MedicationFormValues) => {
-    const response = await authenticatedFetch("/schedules", { method: "POST", body: JSON.stringify({ ...formPayload(date, medication), medication: { ...medication } }) });
+    const response = await authenticatedFetch("/schedules", { method: "POST", body: JSON.stringify({ ...formPayload(date, medication), ...(medication.catalogMedicationId ? {} : { medication: { ...medication } }) }) });
     const created = await response.json();
+    requestVersion.current++;
+    setLoading(false);
     setSchedules((current) => [...current, created]);
   }, [authenticatedFetch]);
   const updateMedication = useCallback(async (id: string, medication: MedicationFormValues) => {
     const scheduleId = id.split("|")[0];
     const response = await authenticatedFetch(`/schedules/${scheduleId}`, {
       method: "PATCH",
-      body: JSON.stringify({ ...formPayload(new Date(), medication), medication: { ...medication } }),
+      body: JSON.stringify({ ...formPayload(new Date(), medication), ...(medication.catalogMedicationId ? {} : { medication: { ...medication } }) }),
     });
     const updated = await response.json();
+    requestVersion.current++;
+    setLoading(false);
     setSchedules((current) => current.map((schedule) => schedule.id === scheduleId ? updated : schedule));
   }, [authenticatedFetch]);
-  const deleteMedication = useCallback(async (id: string) => {
+  const runAction = useCallback(async (id: string, task: () => Promise<void>) => {
+    if (locks.current.has(id)) return;
+    locks.current.add(id);
+    setPendingIds(new Set(locks.current));
+    setError(null);
+    try { await task(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Could not update your medication. Please try again."); }
+    finally { locks.current.delete(id); setPendingIds(new Set(locks.current)); }
+  }, []);
+  const deleteMedication = useCallback(async (id: string) => runAction(id, async () => {
     const scheduleId = id.split("|")[0];
     await authenticatedFetch(`/schedules/${scheduleId}`, { method: "DELETE" });
+    requestVersion.current++;
+    setLoading(false);
     setSchedules((current) => current.filter((schedule) => schedule.id !== scheduleId));
-  }, [authenticatedFetch]);
-  const cycleMedicationStatus = useCallback(async (id: string) => {
+  }), [authenticatedFetch, runAction]);
+  const cycleMedicationStatus = useCallback(async (id: string) => runAction(id, async () => {
     const [scheduleId, localDate, encodedTime] = id.split("|");
     const time = encodedTime ? decodeURIComponent(encodedTime) : "";
     if (!scheduleId || !localDate || !time) throw new Error("Dose is no longer available.");
     const schedule = schedules.find((item) => item.id === scheduleId);
     if (!schedule) throw new Error("Schedule is no longer available.");
-    const taken = schedule.doseLogs.some((log) => log.localDate === localDate && log.time === time);
-    await authenticatedFetch(`/schedules/${scheduleId}/doses/${localDate}/${time}`, { method: taken ? "DELETE" : "PUT" });
-    await retry();
-  }, [authenticatedFetch, retry, schedules]);
+    const taken = schedule.doseLogs.some((log) => log.localDate === localDate && log.time === time && !!log.takenAt);
+    const response = await authenticatedFetch(`/schedules/${scheduleId}/doses/${localDate}/${time}`, { method: taken ? "DELETE" : "PUT" });
+    const log = taken ? null : await response.json();
+    requestVersion.current++;
+    setLoading(false);
+    setSchedules(current => current.map(item => item.id !== scheduleId ? item : { ...item,
+      doseLogs: [...item.doseLogs.filter(existing => existing.localDate !== localDate || existing.time !== time), ...(log ? [log] : [])],
+    }));
+  }), [authenticatedFetch, runAction, schedules]);
 
-  const value = useMemo(() => ({ medicationsByDate, cycleMedicationStatus, addMedication, updateMedication, deleteMedication, loading, error, retry }), [medicationsByDate, cycleMedicationStatus, addMedication, updateMedication, deleteMedication, loading, error, retry]);
+  const value = useMemo(() => ({ medicationsByDate, now, pendingIds, cycleMedicationStatus, addMedication, updateMedication, deleteMedication, loading, error, retry }), [medicationsByDate, now, pendingIds, cycleMedicationStatus, addMedication, updateMedication, deleteMedication, loading, error, retry]);
   return <MedicationContext.Provider value={value}>{children}</MedicationContext.Provider>;
 }
 

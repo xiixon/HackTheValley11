@@ -53,12 +53,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const headers = new Headers(options.headers);
     headers.set('Authorization', ['Bearer', session.token].join(' '));
     if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-    const response = await fetch(`${apiUrl}${path}`, { ...options, headers });
-    if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      throw new Error(body?.errors?.join?.(', ') || body?.error || `Request failed (${response.status})`);
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    if (options.signal?.aborted) controller.abort();
+    options.signal?.addEventListener('abort', cancel, { once: true });
+    const timeout = setTimeout(cancel, 15000);
+    try {
+      const response = await fetch(`${apiUrl}${path}`, { ...options, headers, signal: controller.signal });
+      if (!response.ok) {
+        if (response.status === 401) {
+          setSession(current => current?.token === session.token ? null : current);
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+        const body = await response.json().catch(() => null);
+        const errors = Array.isArray(body?.errors) ? body.errors.filter((item: unknown) => typeof item === 'string').join(', ') : '';
+        throw new Error(errors || (typeof body?.error === 'string' ? body.error : `Request failed (${response.status})`));
+      }
+      return response;
+    } catch (cause) {
+      if (controller.signal.aborted && !options.signal?.aborted) throw new Error('The server took too long to respond. Please try again.');
+      if (cause instanceof TypeError) throw new Error('Could not reach the server. Check your connection and try again.');
+      throw cause;
+    } finally {
+      clearTimeout(timeout);
+      options.signal?.removeEventListener('abort', cancel);
     }
-    return response;
   }, [session]);
 
   return (

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Clickable } from '../ui/Clickable';
+import { useMedications } from '../../context/MedicationContext';
 import { useState } from 'react';
 
 import { getMedicationDisplayStatus, Medication } from '../../types/medication';
@@ -13,7 +14,9 @@ type MedicationCardProps = {
 };
 
 export function MedicationCard({ medication, onMarkTaken, onEditMedication }: MedicationCardProps) {
-  const displayStatus = getMedicationDisplayStatus(medication);
+  const { now, pendingIds } = useMedications();
+  const pending = pendingIds.has(medication.id);
+  const displayStatus = getMedicationDisplayStatus(medication, now);
   const isTaken = displayStatus === 'taken';
   const isMissed = displayStatus === 'missed';
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
@@ -37,7 +40,7 @@ export function MedicationCard({ medication, onMarkTaken, onEditMedication }: Me
           }
           accessibilityRole="button"
           accessibilityState={{ checked: isTaken }}
-          disabled={isMissed}
+          disabled={isMissed || pending}
           onPress={() => onMarkTaken(medication.id)}
           style={({ pressed }) => [
             isMissed ? styles.missedButton : isTaken ? styles.takenButton : styles.takeButton,
@@ -46,16 +49,17 @@ export function MedicationCard({ medication, onMarkTaken, onEditMedication }: Me
         >
           {isTaken && <Text style={styles.takenCheck}>✓</Text>}
           <Text style={isMissed ? styles.missedText : isTaken ? styles.takenText : styles.takeButtonText}>
-            {isMissed ? 'Missed!' : isTaken ? 'Taken' : 'Upcoming'}
+            {pending ? 'Saving…' : isMissed ? 'Missed' : isTaken ? 'Taken' : 'Mark taken'}
           </Text>
         </Clickable>
       </View>
       <View style={styles.actionRow}>
         {isMissed && (
           <Clickable
+            disabled={pending}
             accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
             accessibilityRole="button"
-            onPress={() => onMarkTaken(medication.id)}
+          onPress={() => onMarkTaken(medication.id)}
             style={({ pressed }) => [styles.markTakenButton, pressed && styles.pressed]}
           >
             <Text style={styles.markTakenText}>Mark taken</Text>
@@ -114,6 +118,7 @@ const styles = StyleSheet.create({
   details: {
     flex: 1,
     marginLeft: 14,
+    minWidth: 0,
   },
   name: {
     color: colors.text,
@@ -204,7 +209,7 @@ const styles = StyleSheet.create({
   detailsLink: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 28,
+    minHeight: 44,
     minWidth: 64,
   },
   detailsLinkText: {

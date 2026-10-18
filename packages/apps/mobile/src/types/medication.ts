@@ -7,6 +7,8 @@ import type {
 export type MedicationStatus = 'upcoming' | 'taken';
 
 export type Medication = SharedMedication & {
+  medicationId?: string;
+  catalogMedicationId?: string;
   dosage: string;
   time: string;
   scheduledDate?: string;
@@ -29,7 +31,7 @@ export function getMedicationDisplayStatus(
   medication: Medication,
   now = new Date(),
 ): MedicationDisplayStatus {
-  if (medication.status === 'taken' || !medication.scheduledDate) {
+  if (medication.status === 'taken' || !medication.scheduledDate || /as[_ ]needed/i.test(medication.Frequency)) {
     return medication.status;
   }
 
@@ -42,7 +44,7 @@ export function getMedicationDisplayStatus(
 
   let hour = Number(timeMatch[1]);
   const minute = Number(timeMatch[2] ?? 0);
-  const meridiem = timeMatch[3].toUpperCase();
+  const meridiem = timeMatch[3]!.toUpperCase();
   if (hour === 12) hour = 0;
   if (meridiem === 'PM') hour += 12;
 
@@ -65,6 +67,7 @@ export type MedicationFormValues = Pick<
   | 'avoidWithConditions'
   | 'avoidWithIngredients'
 > & {
+  catalogMedicationId?: string;
   time: string;
   color: string;
   startDate: string;

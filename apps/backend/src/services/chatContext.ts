@@ -12,7 +12,7 @@ export async function getChatContext(userId: string): Promise<ChatHealthContext 
       schedules: {
         where: { isActive: true }, take: 30, orderBy: { id: 'asc' },
         select: {
-          times: true, frequency: true, daysOfWeek: true,
+          metadata: true, times: true, frequency: true, daysOfWeek: true,
           startDate: true, endDate: true, timezone: true,
           medication: { select: { genericName: true, dosageForm: true, doseAmount: true } },
         },
@@ -22,9 +22,10 @@ export async function getChatContext(userId: string): Promise<ChatHealthContext 
   if (!user) return null;
   return {
     profile: user.profile,
-    schedules: user.schedules.map(({ medication, ...schedule }) => ({
-      ...schedule, medication: medication.genericName,
-      dosageForm: medication.dosageForm,       doseAmount: medication.doseAmount ?? 0,
-    })),
+    schedules: user.schedules.map(({ medication, metadata, ...schedule }) => {
+      const dose = metadata && typeof metadata === 'object' && !Array.isArray(metadata) &&
+        typeof metadata.doseAmount === 'number' ? metadata.doseAmount : medication.doseAmount;
+      return { ...schedule, medication: medication.genericName, dosageForm: medication.dosageForm, doseAmount: dose ?? 0 };
+    }),
   };
 }

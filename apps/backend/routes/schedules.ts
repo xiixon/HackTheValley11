@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../src/db/prisma";             
 import { validateScheduleInput } from "../validation/schedule";
+import { isScheduledDose } from '../validation/dose';
+import { isValidDate, isValidTime } from '../../../packages/shared/src/types/Schedule';
 
 const router = Router();
 
@@ -60,7 +62,7 @@ router.post("/", async (req, res) => {
       intervalDays: body.intervalDays ?? null,
       metadata: body.metadata ?? null,
     },
-    include: { medication: true, doseLogs: true },
+    include: { medication: { include: { ingredients: true } }, doseLogs: true },
   });
   res.status(201).json(created);
 });
@@ -70,7 +72,7 @@ router.get("/", async (req, res) => {
     const userId = req.userId;
   if (!userId) return res.status(401).json({ errors: ["not authenticated"] });
 
-  res.json(await prisma.schedule.findMany({ where: { userId }, include: { medication: true, doseLogs: true } }));
+  res.json(await prisma.schedule.findMany({ where: { userId }, include: { medication: { include: { ingredients: true } }, doseLogs: true } }));
 });
 
 // READ (one)
@@ -78,7 +80,7 @@ router.get("/:id", async (req, res) => {
     const userId = req.userId;
   if (!userId) return res.status(401).json({ errors: ["not authenticated"] });
 
-  const schedule = await prisma.schedule.findFirst({ where: { id: req.params.id, userId }, include: { medication: true } });
+  const schedule = await prisma.schedule.findFirst({ where: { id: req.params.id, userId }, include: { medication: { include: { ingredients: true } } } });
   if (!schedule) return res.sendStatus(404);
   res.json(schedule);
 });
@@ -93,7 +95,18 @@ router.patch("/:id", async (req, res) => {
 
   // Only these fields can be changed. The rest of the body is ignored.
   const { times, startDate, endDate, isActive, frequency, daysOfWeek, timezone, intervalDays, metadata, medication } = req.body;
+  const medicationId = req.body.medicationId ?? existing.medicationId;
+  if (typeof medicationId !== "string") return res.status(400).json({ errors: ["medicationId must be a string"] });
+  if (!await prisma.medication.findUnique({ where: { id: medicationId }, select: { id: true } })) {
+    return res.status(404).json({ errors: ["medication not found"] });
+  }
+  // Catalog facts are shared. Editing a personal schedule must not rewrite them.
+  if (medication && (!medicationId.startsWith("custom-") ||
+      await prisma.schedule.count({ where: { medicationId, userId: { not: userId } } }) > 0)) {
+    return res.status(400).json({ errors: ["Catalog medicine details are read-only. Choose a medicine and edit your schedule instead."] });
+  }
   const merged = {
+    medicationId,
     times: times ?? existing.times,
     startDate: startDate ?? existing.startDate,
     endDate: endDate !== undefined ? endDate : existing.endDate,
@@ -137,7 +150,7 @@ router.patch("/:id", async (req, res) => {
         });
       }
       await transaction.medication.update({
-        where: { id: existing.medicationId },
+        where: { id: medicationId },
         data: medicationData,
       });
     }
@@ -156,6 +169,7 @@ router.put("/:id/doses/:localDate/:time", async (req, res) => {
   const schedule = await prisma.schedule.findFirst({ where: { id: req.params.id, userId } });
   if (!schedule) return res.sendStatus(404);
   const { localDate, time } = req.params;
+  if (!isScheduledDose(schedule, localDate, time)) return res.status(400).json({ errors: ['This date and time do not belong to the schedule.'] });
   const log = await prisma.doseLog.upsert({
     where: { scheduleId_localDate_time: { scheduleId: schedule.id, localDate, time } },
     create: { scheduleId: schedule.id, localDate, time, takenAt: new Date() },
@@ -169,6 +183,7 @@ router.delete("/:id/doses/:localDate/:time", async (req, res) => {
   if (!userId) return res.status(401).json({ errors: ["not authenticated"] });
   const schedule = await prisma.schedule.findFirst({ where: { id: req.params.id, userId } });
   if (!schedule) return res.sendStatus(404);
+  if (!isValidDate(req.params.localDate) || !isValidTime(req.params.time)) return res.status(400).json({ errors: ['Use a valid date and time.'] });
   await prisma.doseLog.deleteMany({
     where: { scheduleId: schedule.id, localDate: req.params.localDate, time: req.params.time },
   });
@@ -180,7 +195,10 @@ router.delete("/:id", async (req, res) => {
     const userId = req.userId;
   if (!userId) return res.status(401).json({ errors: ["not authenticated"] });
 
-  const { count } = await prisma.schedule.deleteMany({ where: { id: req.params.id, userId } });
+  const [, { count }] = await prisma.$transaction([
+    prisma.reminderLog.deleteMany({ where: { schedule: { id: req.params.id, userId } } }),
+    prisma.schedule.deleteMany({ where: { id: req.params.id, userId } }),
+  ]);
   res.sendStatus(count ? 204 : 404);
 });
 

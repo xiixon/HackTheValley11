@@ -1,7 +1,6 @@
 import {
   Modal,
   ScrollView,
-  Alert,
   StyleSheet,
   Text,
   View,
@@ -15,16 +14,19 @@ import {
 } from "../../types/medication";
 import { colors } from "../../theme/colors";
 import { typography } from "../../theme/typography";
+import { MedicationSyncNotice } from '../medications/MedicationSyncNotice';
 import { AddMedicationModal } from "../medications/AddMedicationModal";
 import { MedicationDetailsModal } from "../medications/MedicationDetailsModal";
 import { PageBackdrop } from "../navigation/PageBackdrop";
 import { Clickable } from "../ui/Clickable";
 
 type ScheduleProps = {
+  now: Date;
+  pendingIds: ReadonlySet<string>;
   medicationsByDate: Record<string, Medication[]>;
   onCycleMedicationStatus: (id: string) => void;
-  onAddMedication: (date: Date, medication: MedicationFormValues) => void;
-  onUpdateMedication: (id: string, medication: MedicationFormValues) => void;
+  onAddMedication: (date: Date, medication: MedicationFormValues) => void | Promise<void>;
+  onUpdateMedication: (id: string, medication: MedicationFormValues) => void | Promise<void>;
   onDeleteMedication: (id: string) => void;
 };
 
@@ -37,6 +39,7 @@ function getDateKey(date: Date) {
 }
 
 export function Schedule({
+  now, pendingIds,
   medicationsByDate,
   onCycleMedicationStatus,
   onAddMedication,
@@ -48,6 +51,7 @@ export function Schedule({
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [isAddMedicationVisible, setIsAddMedicationVisible] = useState(false);
   const [detailsMedication, setDetailsMedication] = useState<Medication | null>(null);
+  const [deletingMedication, setDeletingMedication] = useState<Medication | null>(null);
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
 
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -72,12 +76,12 @@ export function Schedule({
   const getDaySummary = (date: Date) => {
     const dayMedications = medicationsByDate[getDateKey(date)] ?? [];
     const hasMissed = dayMedications.some(
-      (medication) => getMedicationDisplayStatus(medication) === "missed",
+      (medication) => getMedicationDisplayStatus(medication, now) === "missed",
     );
     const allTaken =
       dayMedications.length > 0 &&
       dayMedications.every(
-        (medication) => getMedicationDisplayStatus(medication) === "taken",
+        (medication) => getMedicationDisplayStatus(medication, now) === "taken",
       );
 
     return {
@@ -121,6 +125,7 @@ export function Schedule({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
+        <MedicationSyncNotice />
         <View style={styles.hero}>
           <View style={styles.heroCopy}>
             <Text style={styles.eyebrow}>
@@ -137,7 +142,7 @@ export function Schedule({
           </View>
           <View style={styles.heroBadge}>
             <Text style={styles.heroBadgeNumber}>{untakenDoses}</Text>
-            <Text style={styles.heroBadgeLabel}>doses left</Text>
+            <Text style={styles.heroBadgeLabel}>{untakenDoses === 1 ? "dose left" : "doses left"}</Text>
           </View>
         </View>
 
@@ -226,7 +231,7 @@ export function Schedule({
 
         <View style={styles.doseList}>
           {selectedMedications.map((medication) => {
-            const displayStatus = getMedicationDisplayStatus(medication);
+            const displayStatus = getMedicationDisplayStatus(medication, now);
             const isTaken = displayStatus === "taken";
             const isMissed = displayStatus === "missed";
 
@@ -289,7 +294,7 @@ export function Schedule({
                     }
                     accessibilityRole="button"
                     accessibilityState={{ checked: isTaken }}
-                    disabled={isMissed}
+                    disabled={isMissed || pendingIds.has(medication.id)}
                     onPress={() => onCycleMedicationStatus(medication.id)}
                     style={({ pressed }) => [
                       styles.status,
@@ -310,11 +315,12 @@ export function Schedule({
                             : styles.statusUpcomingText
                       }
                     >
-                      {isMissed ? "Missed" : isTaken ? "Taken" : "Upcoming"}
+                      {pendingIds.has(medication.id) ? "Saving…" : isMissed ? "Missed" : isTaken ? "Taken" : "Mark taken"}
                     </Text>
                   </Clickable>
                   {isMissed && (
                     <Clickable
+                      disabled={pendingIds.has(medication.id)}
                       accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
                       accessibilityRole="button"
                       onPress={() => onCycleMedicationStatus(medication.id)}
@@ -338,22 +344,10 @@ export function Schedule({
                     <Text style={styles.detailsButtonText}>Details</Text>
                   </Clickable>
                   <Clickable
-                    accessibilityLabel={`Delete ${medication.genericName} scheduled dose`}
+                    accessibilityLabel={`Remove ${medication.genericName} schedule`}
                     accessibilityRole="button"
-                    onPress={() =>
-                      Alert.alert(
-                        "Delete scheduled dose?",
-                        `Remove the ${medication.time} dose of ${medication.genericName}?`,
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Delete",
-                            style: "destructive",
-                            onPress: () => onDeleteMedication(medication.id),
-                          },
-                        ],
-                      )
-                    }
+                    disabled={pendingIds.has(medication.id)}
+                    onPress={() => setDeletingMedication(medication)}
                     style={({ pressed }) => [
                       styles.deleteButton,
                       pressed && styles.statusPressed,
@@ -515,8 +509,18 @@ export function Schedule({
             </View>
           </View>
         </Modal>
+        <Modal visible={!!deletingMedication} transparent animationType="fade" onRequestClose={() => setDeletingMedication(null)}>
+          <View style={styles.confirmOverlay}>
+            <View style={styles.confirmCard}>
+              <Text style={styles.confirmTitle}>Remove this schedule?</Text>
+              <Text style={styles.confirmText}>This removes {deletingMedication?.genericName} on all scheduled dates, including its dose history.</Text>
+              <Clickable accessibilityRole="button" onPress={() => setDeletingMedication(null)} style={styles.confirmAction}><Text style={styles.confirmLabel}>Cancel</Text></Clickable>
+              <Clickable accessibilityRole="button" onPress={() => { if (deletingMedication) onDeleteMedication(deletingMedication.id); setDeletingMedication(null); }} style={styles.confirmAction}><Text style={styles.confirmDelete}>Remove schedule</Text></Clickable>
+            </View>
+          </View>
+        </Modal>
         <AddMedicationModal
-          key={editingMedication?.id ?? "new-medication"}
+          key={`new-medication-${selectedDateKey}`}
           date={selectedDate}
           onClose={() => setIsAddMedicationVisible(false)}
           onSubmit={(medication) => onAddMedication(selectedDate, medication)}
@@ -531,11 +535,12 @@ export function Schedule({
           }}
         />
         <AddMedicationModal
+          key={editingMedication?.id ?? "edit-medication"}
           date={selectedDate}
           medication={editingMedication}
           onClose={() => setEditingMedication(null)}
           onSubmit={(updated) => {
-            if (editingMedication) onUpdateMedication(editingMedication.id, updated);
+            if (editingMedication) return onUpdateMedication(editingMedication.id, updated);
           }}
           visible={editingMedication !== null}
         />
@@ -545,6 +550,13 @@ export function Schedule({
 }
 
 const styles = StyleSheet.create({
+  confirmOverlay: { flex: 1, justifyContent: "center", backgroundColor: "rgba(36,52,94,0.42)", padding: 24 },
+  confirmCard: { backgroundColor: colors.surface, borderRadius: 22, padding: 24, width: "100%", maxWidth: 420, alignSelf: "center" },
+  confirmTitle: { ...typography.heading, fontSize: 24, color: colors.primary },
+  confirmText: { fontSize: 15, lineHeight: 22, color: colors.textMuted, marginVertical: 16 },
+  confirmAction: { minHeight: 48, justifyContent: "center", alignItems: "center" },
+  confirmLabel: { fontSize: 16, color: colors.primary, fontWeight: "600" },
+  confirmDelete: { fontSize: 16, color: "#A12D3C", fontWeight: "700" },
   content: {
     paddingHorizontal: 20,
     paddingBottom: 48,
@@ -668,6 +680,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   sectionHeader: {
+    flexWrap: "wrap",
+    gap: 12,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -675,9 +689,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   headerActions: {
+    gap: 8,
     alignItems: "center",
     flexDirection: "row",
-    marginLeft: 12,
   },
   addHeaderButton: {
     alignItems: "center",

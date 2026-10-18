@@ -23,4 +23,12 @@ router.post("/", async (req, res) => {
   res.sendStatus(204);
 });
 
+router.delete("/", async (req, res) => {
+  if (!req.userId) return res.sendStatus(401);
+  const token = req.body?.token;
+  if (typeof token !== "string") return res.sendStatus(400);
+  await prisma.pushToken.deleteMany({ where: { userId: req.userId, token } });
+  res.sendStatus(204);
+});
+
 export default router;

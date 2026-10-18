@@ -9,6 +9,7 @@ import type { AppMedicationSnapshot, ChatMessage, ChatReply } from '../../../../
 import { useAuth } from '../auth/AuthContext';
 import { useMedications } from '../context/MedicationContext';
 import { apiUrl } from '../lib/api';
+import { dateKey } from '../lib/schedulePresentation';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { PageBackdrop } from '../components/navigation/PageBackdrop';
@@ -16,7 +17,8 @@ import { Clickable } from '../components/ui/Clickable';
 
 export function ChatScreen() {
   const { session } = useAuth();
-  const { medicationsByDate } = useMedications();
+  const { medicationsByDate, now } = useMedications();
+  const today = dateKey(now);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,11 +29,11 @@ export function ChatScreen() {
   const sending = useRef(false);
 
   const appMedications = useMemo<AppMedicationSnapshot[]>(() =>
-    Object.entries(medicationsByDate).sort(([a], [b]) => b.localeCompare(a))
+    Object.entries(medicationsByDate).filter(([date]) => date >= today).sort(([a], [b]) => a.localeCompare(b))
       .flatMap(([date, medications]) => medications.map((medication) => ({
         date, name: medication.genericName.slice(0, 160), dosage: medication.dosage.slice(0, 120),
         time: medication.time.slice(0, 40), status: medication.status,
-      }))).slice(0, 30), [medicationsByDate]);
+      }))).slice(0, 30), [medicationsByDate, today]);
 
   useEffect(() => () => request.current?.abort(), []);
 

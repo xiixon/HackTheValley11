@@ -65,6 +65,32 @@ model User {
   profile  Profile?                  // one-to-one
   schedules Schedule[]               // one user has many schedules
   pushTokens PushToken[]
+  vendingPass VendingPass?
+  vendingOrders VendingOrder[]
+}
+
+model VendingPass {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code String @unique @db.VarChar(5)
+  schedule Json @default("[]")
+  timezone String @default("America/Toronto")
+  syncedAt DateTime @default(now())
+}
+
+model VendingOrder {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind String
+  status String @default("review")
+  plan Json
+  progress Int @default(0)
+  deviceMode String?
+  error String?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  @@index([userId, createdAt])
 }
 
 enum Sex {

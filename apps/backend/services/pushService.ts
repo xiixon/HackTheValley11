@@ -25,7 +25,8 @@ export async function sendReminder(
     body: offset ? `Take your medication in ${offset} minute${offset === 1 ? "" : "s"}.` : "It is time to take your medication.",
     ...(metadata.notificationSound !== "silent" ? { sound: "default" } : {}),
     categoryId: "medication-reminder",
-    data: { scheduleId: schedule.id, medicationId: schedule.medicationId, localDate, time, offset },
+    channelId: metadata.notificationSound === "silent" ? "medication-reminders-silent" : "medication-reminders",
+    data: { userId, scheduleId: schedule.id, medicationId: schedule.medicationId, localDate, time, offset },
   }));
 
   // Limit the number of messages sent at once

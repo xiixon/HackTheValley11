@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { ComponentProps } from "react";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { DateTimeDialog } from "../ui/DateTimeDialog";
+import { time24 } from "../../lib/schedulePresentation";
+import { hasValidDateRange, isValidDate, isValidTime } from "../../../../../shared/src/types/Schedule";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -15,13 +17,15 @@ import {
 import { Medication, MedicationFormValues } from "../../types/medication";
 import { colors } from "../../theme/colors";
 import { typography } from '../../theme/typography';
+import { MedicineCatalogPicker } from './MedicineCatalogPicker';
+import { catalogFormFields } from '../../lib/medicationCatalog';
 import { Clickable } from '../ui/Clickable';
 
 type AddMedicationModalProps = {
   date: Date;
   visible: boolean;
   onClose: () => void;
-  onSubmit: (values: MedicationFormValues) => void;
+  onSubmit: (values: MedicationFormValues) => void | Promise<void>;
   medication?: Medication | null;
 };
 
@@ -59,7 +63,7 @@ function formatDate(date: Date) {
 }
 
 function formatTime(date: Date) {
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 function parseDate(value: string, fallback: Date) {
@@ -75,8 +79,12 @@ export function AddMedicationModal({
   medication = null,
 }: AddMedicationModalProps) {
   const [values, setValues] = useState<MedicationFormValues>(() =>
-    medication ? getFormValues(medication) : initialValues,
+    medication ? getFormValues(medication) : { ...initialValues, startDate: formatDate(date), endDate: formatDate(date) },
   );
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [manualEntry, setManualEntry] = useState(!!medication && !getFormValues(medication).catalogMedicationId);
+  const [choosingMedicine, setChoosingMedicine] = useState(!medication);
   const [ingredientName, setIngredientName] = useState(
     medication?.ingredients[0]?.name ?? "",
   );
@@ -99,7 +107,9 @@ export function AddMedicationModal({
       return;
     }
 
-    setValues(initialValues);
+    setValues({ ...initialValues, startDate: formatDate(date), endDate: formatDate(date) });
+    setManualEntry(false);
+    setChoosingMedicine(true);
     setIngredientName("");
     setIngredientStrength("0");
   };
@@ -110,43 +120,48 @@ export function AddMedicationModal({
   ) => setValues((current) => ({ ...current, [key]: value }));
 
   const isRecurring = !["Once", "As needed"].includes(values.Frequency);
-  const needsWeekdays = values.Frequency === "Selected days";
+  const needsWeekdays = ["Selected days", "Weekly"].includes(values.Frequency);
   const needsInterval = values.Frequency === "Every N days";
-  const startDateValid = /^\d{4}-\d{2}-\d{2}$/.test(values.startDate);
-  const endDateValid =
-    !isRecurring ||
-    (/^\d{4}-\d{2}-\d{2}$/.test(values.endDate) &&
-      values.endDate >= values.startDate);
+  const startDateValid = isValidDate(values.startDate);
+  const endDateValid = !isRecurring || hasValidDateRange(values.startDate, values.endDate || undefined);
   const canSubmit =
     Boolean(values.id.trim() && values.genericName.trim()) &&
+    Number.isFinite(values.doseAmount) && values.doseAmount > 0 &&
     startDateValid &&
     endDateValid &&
     (!needsWeekdays || values.selectedWeekdays.length > 0) &&
-    (!needsInterval || values.intervalDays > 0) &&
+    (!needsInterval || (Number.isInteger(values.intervalDays) && values.intervalDays > 0)) &&
+    (!manualEntry || !ingredientName.trim() || (Number.isFinite(Number(ingredientStrength)) && Number(ingredientStrength) >= 0)) &&
     values.notificationOffsets.length > 0 &&
-    values.reminderTimes.every((time) => time.trim().length > 0);
+    values.reminderTimes.length > 0 && values.reminderTimes.every((time) => isValidTime(time24(time)));
 
-  const submit = () => {
-    if (!canSubmit) return;
-    onSubmit({
+  const submit = async () => {
+    if (!canSubmit || saving) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+    await onSubmit({
       ...values,
       id: values.id.trim(),
       genericName: values.genericName.trim(),
       time: values.reminderTimes[0] ?? values.time,
       brandName: values.brandName.trim() || values.genericName.trim(),
-      ingredients: ingredientName.trim()
+      ingredients: !manualEntry ? values.ingredients : ingredientName.trim()
         ? [{ name: ingredientName.trim(), strength: Number(ingredientStrength) || 0 }]
         : [],
       purposes: values.purposes,
       startDate: values.startDate.trim(),
-      endDate: isRecurring ? values.endDate.trim() : "",
+      endDate: values.Frequency === "Once" ? values.startDate.trim() : values.endDate.trim(),
       notes: values.notes.trim(),
-      reminderTimes: values.reminderTimes,
+      reminderTimes: [...new Set(values.reminderTimes)],
       selectedWeekdays: values.selectedWeekdays,
       intervalDays: values.intervalDays,
     });
     resetForm();
     onClose();
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : "Could not save medication. Please try again.");
+    } finally { setSaving(false); }
   };
 
   const openDatePicker = (target: "startDate" | "endDate") => {
@@ -160,28 +175,22 @@ export function AddMedicationModal({
   };
 
   const openTimePicker = (target: "primaryReminder" | "reminder" = "reminder") => {
-    setPickerDate(new Date());
+    const value = target === "primaryReminder" ? values.reminderTimes[0] : newReminderTime;
+    const selected = new Date();
+    if (value) {
+      const [hours, minutes] = time24(value).split(":").map(Number);
+      if (Number.isFinite(hours) && Number.isFinite(minutes)) selected.setHours(hours, minutes, 0, 0);
+    }
+    setPickerDate(selected);
     setPickerTarget(target);
   };
 
-  const handlePickerChange = (_event: unknown, selected?: Date) => {
-    if (Platform.OS !== "ios") setPickerTarget(null);
-    if (!selected || !pickerTarget) return;
-
-    if (pickerTarget === "primaryReminder") {
-      update("reminderTimes", [
-        formatTime(selected),
-        ...values.reminderTimes.slice(1),
-      ]);
-      return;
-    }
-
-    if (pickerTarget === "reminder") {
-      setNewReminderTime(formatTime(selected));
-      return;
-    }
-
-    update(pickerTarget, formatDate(selected));
+  const handlePickerChange = (selected: Date) => {
+    if (!pickerTarget) return;
+    if (pickerTarget === "primaryReminder") update("reminderTimes", [formatTime(selected), ...values.reminderTimes.slice(1)]);
+    else if (pickerTarget === "reminder") setNewReminderTime(formatTime(selected));
+    else update(pickerTarget, formatDate(selected));
+    setPickerTarget(null);
   };
 
   return (
@@ -198,17 +207,38 @@ export function AddMedicationModal({
                 <Text style={styles.closeText}>×</Text>
               </Clickable>
             </View>
-            <Field label="Medication ID" value={values.id} onChangeText={(value) => update("id", value)} placeholder="e.g. lisinopril-10mg" />
+            {!manualEntry && choosingMedicine && <MedicineCatalogPicker visible={visible} onSelect={(medicine) => {
+              setValues((current) => ({ ...current, ...catalogFormFields(medicine) }));
+              setChoosingMedicine(false);
+            }} />}
+            {!manualEntry && !!values.genericName && !choosingMedicine && (
+              <View style={styles.catalogCard}>
+                <Text style={styles.catalogName}>{values.brandName || values.genericName}</Text>
+                <Text style={styles.catalogGeneric}>{values.genericName} · {values.dosageForm}</Text>
+                <Text style={styles.catalogFacts}>{values.ingredients.map(({ name, strength }) => `${name} · ${strength} mg`).join("\n")}</Text>
+                {!!values.purposes.length && <Text style={styles.catalogFacts}>{values.purposes.join(" · ")}</Text>}
+                <Text style={styles.helperText}>{values.warning.length} warnings available in medication details</Text>
+                <Clickable accessibilityRole="button" onPress={() => setChoosingMedicine(true)}><Text style={styles.catalogLink}>Change medicine</Text></Clickable>
+              </View>
+            )}
+            {!medication && <Clickable accessibilityRole="button" onPress={() => {
+              setManualEntry(!manualEntry);
+              setChoosingMedicine(true);
+              setValues((current) => ({ ...current, ...catalogFormFields({ id: "", genericName: "", brandName: "", ingredients: [], purposes: [], dosageForm: "tablet", warning: [], avoidWithConditions: [], avoidWithIngredients: [] }),
+                id: !manualEntry ? `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}` : "" }));
+            }} style={styles.entryToggle}><Text style={styles.catalogLink}>{manualEntry ? "Search medicine catalog" : "Enter a medicine manually"}</Text></Clickable>}
+            {manualEntry && <>
             <Field label="Generic name" value={values.genericName} onChangeText={(value) => update("genericName", value)} placeholder="e.g. Lisinopril" />
             <Field label="Brand name" value={values.brandName} onChangeText={(value) => update("brandName", value)} placeholder="Optional" />
+            </>}
             <View style={styles.row}>
               <View style={styles.half}><Field label="Dose amount" keyboardType="numeric" value={String(values.doseAmount)} onChangeText={(value) => update("doseAmount", Number(value) || 0)} /></View>
               <View style={styles.half}>
-                <SelectField
+                {!manualEntry ? <View style={styles.field}><Text style={styles.fieldLabel}>Dosage form</Text><Text style={styles.catalogForm}>{values.genericName ? values.dosageForm : "Select a medicine"}</Text></View> : <SelectField
                   label="Dosage form"
                   value={values.dosageForm}
                   onPress={() => update("dosageForm", values.dosageForm === "tablet" ? "capsule" : "tablet")}
-                />
+                />}
               </View>
             </View>
             {needsWeekdays && (
@@ -268,7 +298,7 @@ export function AddMedicationModal({
               ))}
               <View style={styles.addTimeRow}>
                 <SelectField label="New reminder time" value={newReminderTime || "Choose time"} onPress={openTimePicker} />
-                <Clickable accessibilityLabel="Add reminder time" accessibilityRole="button" disabled={!newReminderTime.trim()}                 onPress={() => { if (!newReminderTime) return; update("reminderTimes", [...values.reminderTimes, newReminderTime]); setNewReminderTime(""); }} style={[styles.addTimeButton, !newReminderTime.trim() && styles.saveButtonDisabled]}>
+                <Clickable accessibilityLabel="Add reminder time" accessibilityRole="button" disabled={!newReminderTime.trim() || values.reminderTimes.some(time => time24(time) === time24(newReminderTime))} onPress={() => { if (!newReminderTime) return; update("reminderTimes", [...values.reminderTimes, newReminderTime]); setNewReminderTime(""); }} style={[styles.addTimeButton, !newReminderTime.trim() && styles.saveButtonDisabled]}>
                   <Text style={styles.addTimeText}>+</Text>
                 </Clickable>
               </View>
@@ -278,9 +308,7 @@ export function AddMedicationModal({
               <Text style={styles.helperText}>Choose one or more reminders before each scheduled dose.</Text>
               <Clickable accessibilityRole="button" accessibilityLabel="Choose notification lead times" onPress={() => setIsNotificationOffsetOpen((open) => !open)} style={styles.select}>
                 <Text style={styles.selectText}>
-                  {values.notificationOffsets.includes(0)
-                    ? "At dose time"
-                    : values.notificationOffsets.map((offset) => `${offset} min before`).join(", ") || "Choose lead times"}
+                  {values.notificationOffsets.map((offset) => offset === 0 ? "At dose time" : `${offset} min before`).join(", ") || "Choose lead times"}
                 </Text>
                 <Text style={styles.selectChevron}>{isNotificationOffsetOpen ? "▲" : "▼"}</Text>
               </Clickable>
@@ -343,28 +371,28 @@ export function AddMedicationModal({
               <View style={styles.half}>
                 <SelectField label="Start date" value={values.startDate || "Choose date"} onPress={() => openDatePicker("startDate")} />
               </View>
-              {isRecurring && <View style={styles.half}><SelectField label="End date" value={values.endDate || "Choose date"} onPress={() => openDatePicker("endDate")} /></View>}
+              {isRecurring && <View style={styles.half}><SelectField label="End date" value={values.endDate || "No end date"} onPress={() => openDatePicker("endDate")} /></View>}
             </View>
+            {manualEntry && <>
             <Text style={styles.groupLabel}>Ingredient (optional)</Text>
             <View style={styles.row}>
               <View style={styles.half}><Field label="Name" value={ingredientName} onChangeText={setIngredientName} placeholder="e.g. Lisinopril" /></View>
               <View style={styles.half}><Field label="Strength (mg)" keyboardType="numeric" value={ingredientStrength} onChangeText={setIngredientStrength} /></View>
             </View>
             <Field label="Purpose (optional)" value={values.purposes[0] ?? ""} onChangeText={(value) => update("purposes", value ? [value] : [])} placeholder="What is it for?" />
+            </>}
             <Field label="Instructions or notes (optional)" value={values.notes} onChangeText={(value) => update("notes", value)} placeholder="e.g. Take with food" multiline />
-            <Clickable accessibilityLabel="Save medication" accessibilityRole="button" disabled={!canSubmit} onPress={submit} style={[styles.saveButton, !canSubmit && styles.saveButtonDisabled]}>
-              <Text style={styles.saveButtonText}>{medication ? "Save changes" : "Add medication"}</Text>
+            {!!saveError && <Text accessibilityRole="alert" style={styles.saveError}>{saveError}</Text>}
+            <Clickable accessibilityLabel="Save medication" accessibilityRole="button" disabled={!canSubmit || saving} onPress={submit} style={[styles.saveButton, (!canSubmit || saving) && styles.saveButtonDisabled]}>
+              <Text style={styles.saveButtonText}>{saving ? "Saving…" : medication ? "Save changes" : "Add medication"}</Text>
             </Clickable>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
       {pickerTarget && (
-        <DateTimePicker
-          value={pickerDate}
+        <DateTimeDialog value={pickerDate}
           mode={pickerTarget === "reminder" || pickerTarget === "primaryReminder" ? "time" : "date"}
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={handlePickerChange}
-        />
+          onConfirm={handlePickerChange} onCancel={() => setPickerTarget(null)} />
       )}
     </Modal>
   );
@@ -372,7 +400,8 @@ export function AddMedicationModal({
 
 function getFormValues(medication: Medication): MedicationFormValues {
   return {
-    id: medication.id,
+    id: medication.medicationId ?? medication.id,
+    catalogMedicationId: medication.catalogMedicationId ?? (medication.medicationId && !medication.medicationId.startsWith("custom-") ? medication.medicationId : undefined),
     genericName: medication.genericName,
     brandName: medication.brandName,
     ingredients: medication.ingredients,
@@ -386,7 +415,7 @@ function getFormValues(medication: Medication): MedicationFormValues {
     time: medication.time,
     color: medication.color,
     startDate: medication.startDate ?? medication.scheduledDate ?? "",
-    endDate: medication.endDate ?? medication.startDate ?? medication.scheduledDate ?? "",
+    endDate: medication.endDate ?? "",
     notes: medication.notes ?? "",
     reminderTimes: medication.reminderTimes ?? [medication.time],
     selectedWeekdays: medication.selectedWeekdays ?? [],
@@ -401,7 +430,7 @@ function Field(props: ComponentProps<typeof TextInput> & { label: string }) {
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput {...inputProps} style={styles.input} placeholderTextColor={colors.textMuted} />
+      <TextInput accessibilityLabel={label} {...inputProps} style={styles.input} placeholderTextColor={colors.textMuted} />
     </View>
   );
 }
@@ -432,6 +461,14 @@ function SelectField({
 }
 
 const styles = StyleSheet.create({
+  saveError: { color: "#B23448", fontSize: 13, lineHeight: 19, marginVertical: 10 },
+  catalogCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 14, gap: 8 },
+  catalogName: { ...typography.heading, fontSize: 22, color: colors.primary },
+  catalogGeneric: { fontSize: 13, color: colors.text },
+  catalogFacts: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+  catalogLink: { fontSize: 13, color: colors.primary, fontWeight: "700" },
+  catalogForm: { fontSize: 14, color: colors.text, paddingVertical: 13, textTransform: "capitalize" },
+  entryToggle: { alignSelf: "flex-start", paddingVertical: 10, marginBottom: 12 },
   overlay: { backgroundColor: "rgba(36, 52, 94, 0.42)", flex: 1, justifyContent: "flex-end" },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "92%" },
   content: { padding: 24, paddingBottom: 36 },

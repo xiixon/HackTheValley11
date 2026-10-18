@@ -1,16 +1,17 @@
 import { DefaultTheme, ThemeProvider } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Platform, View } from 'react-native';
-import Constants from 'expo-constants';
-import type * as NotificationsModule from 'expo-notifications';
+import { ActivityIndicator, Platform, View } from 'react-native';
+import { DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
+import { useFonts } from 'expo-font';
 
 import { AuthProvider, useAuth } from '../auth/AuthContext';
 import { ProfileMenu } from '../components/navigation/ProfileMenu';
 import { WebTabs } from '../components/navigation/WebTabs';
 import { MedicationProvider } from '../context/MedicationContext';
 import { colors } from '../theme/colors';
+import { headingFont } from '../theme/typography';
+import { VendingProvider } from '../vending/VendingProvider';
 
 const theme = {
   ...DefaultTheme,
@@ -25,6 +26,14 @@ const theme = {
 };
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({ [headingFont]: DMSerifDisplay_400Regular });
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.primary} accessibilityLabel="Loading app" />
+      </View>
+    );
+  }
   return (
     <AuthProvider>
       <ThemeProvider value={theme}>
@@ -36,73 +45,12 @@ export default function RootLayout() {
 }
 
 function Navigation() {
-  const { session, authenticatedFetch } = useAuth();
+  const { session } = useAuth();
   const signedIn = !!session;
-
-  useEffect(() => {
-    if (
-      !signedIn ||
-      Platform.OS === 'web' ||
-      Constants.appOwnership === 'expo'
-    ) return;
-    let active = true;
-    const notifications = async () => {
-      const Notifications: typeof NotificationsModule = await import('expo-notifications');
-      if (!active) return;
-
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
-      const permissions = await Notifications.getPermissionsAsync();
-      const granted = permissions.granted || (await Notifications.requestPermissionsAsync()).granted;
-      if (!granted || !active) return undefined;
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('medication-reminders', {
-          name: 'Medication reminders',
-          importance: Notifications.AndroidImportance.HIGH,
-          sound: 'default',
-        });
-      }
-      await Notifications.setNotificationCategoryAsync('medication-reminder', [
-        { identifier: 'snooze', buttonTitle: 'Snooze 10 minutes', options: { opensAppToForeground: false } },
-        { identifier: 'dismiss', buttonTitle: 'Dismiss', options: { isDestructive: true } },
-      ]);
-      const token = (await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId,
-      })).data;
-      await authenticatedFetch('/push-tokens', { method: 'POST', body: JSON.stringify({ token }) });
-
-      const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-        if (response.actionIdentifier !== 'snooze') return;
-        const content = response.notification.request.content;
-        void Notifications.scheduleNotificationAsync({
-          content: {
-            title: `${content.title ?? 'Medication'} (snoozed)`,
-            body: content.body ?? undefined,
-            data: { ...content.data, snoozed: true },
-            sound: content.sound ?? undefined,
-            categoryIdentifier: content.categoryIdentifier ?? undefined,
-          },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 600 },
-        });
-      });
-
-      return responseSubscription;
-    };
-    let responseSubscription: { remove: () => void } | undefined;
-    void notifications()
-      .then((subscription) => { responseSubscription = subscription; })
-      .catch((error) => console.warn('Unable to register medication notifications', error));
-    return () => { active = false; responseSubscription?.remove(); };
-  }, [authenticatedFetch, signedIn]);
 
   return (
     <MedicationProvider key={session?.user.id ?? 'signed-out'}>
+      <VendingProvider>
       <View style={{ flex: 1 }}>
         {signedIn && <ProfileMenu />}
         {Platform.OS === 'web' ? <WebTabs signedIn={signedIn} /> : <NativeTabs
@@ -128,6 +76,10 @@ function Navigation() {
             <NativeTabs.Trigger.Label>Schedule</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon sf="calendar" md="calendar_month" />
           </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="vending" hidden={!signedIn}>
+            <NativeTabs.Trigger.Label>Vending</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon sf="qrcode" md="qr_code" />
+          </NativeTabs.Trigger>
           <NativeTabs.Trigger name="chat" hidden={!signedIn} disableAutomaticContentInsets>
             <NativeTabs.Trigger.Label>IntelliMed</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon sf="bubble.left.and.bubble.right" md="chat" />
@@ -138,6 +90,7 @@ function Navigation() {
           </NativeTabs.Trigger>
         </NativeTabs>}
       </View>
+      </VendingProvider>
     </MedicationProvider>
   );
 }

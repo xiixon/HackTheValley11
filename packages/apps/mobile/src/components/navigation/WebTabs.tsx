@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const tabs = [
-  ['index', 'Today', '⌂'], ['schedule', 'Schedule', '▦'],
+  ['index', 'Today', '⌂'], ['schedule', 'Schedule', '▦'], ['vending', 'Vending', '▦'],
   ['chat', 'IntelliMed', '✦'], ['history', 'History', '◷'],
 ] as const;
 
@@ -14,7 +14,7 @@ export function WebTabs({ signedIn }: { signedIn: boolean }) {
     <Tabs screenOptions={{
       headerShown: false, tabBarHideOnKeyboard: true,
       tabBarActiveTintColor: colors.primary, tabBarInactiveTintColor: colors.textMuted,
-      tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       tabBarStyle: signedIn ? { backgroundColor: colors.surface, height: 64 } : { display: 'none' },
     }}>
       <Tabs.Protected guard={!signedIn}>

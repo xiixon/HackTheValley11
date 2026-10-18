@@ -11,8 +11,10 @@ import {
 
 import { useMedications } from '../context/MedicationContext';
 import { PageBackdrop } from '../components/navigation/PageBackdrop';
+import { MedicationSyncNotice } from '../components/medications/MedicationSyncNotice';
 import { Clickable } from '../components/ui/Clickable';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
 import { getMedicationDisplayStatus, Medication } from '../types/medication';
 
 type AdherenceStatus = 'on-time' | 'late' | 'missed';
@@ -65,7 +67,7 @@ function csvValue(value: string) {
 }
 
 export default function HistoryScreen() {
-  const { medicationsByDate } = useMedications();
+  const { medicationsByDate, now } = useMedications();
   const [query, setQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All medications');
   const [dateRange, setDateRange] = useState<DateRange>('all');
@@ -74,12 +76,11 @@ export default function HistoryScreen() {
   const [exportMessage, setExportMessage] = useState('');
 
   const entries = useMemo<HistoryEntry[]>(() => {
-    const now = new Date();
     return Object.values(medicationsByDate)
       .flatMap((medications) =>
         medications.flatMap((medication) => {
           const date = parseScheduledDate(medication);
-          if (!date || date > now || medication.status === 'upcoming') return [];
+          if (!date || getMedicationDisplayStatus(medication, now) === 'upcoming') return [];
           return [{
             medication,
             date,
@@ -89,7 +90,7 @@ export default function HistoryScreen() {
         }),
       )
       .sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [medicationsByDate]);
+  }, [medicationsByDate, now]);
 
   const medicationTypes = useMemo(
     () => ['All medications', ...new Set(entries.map(({ medication }) => medication.genericName))],
@@ -97,7 +98,6 @@ export default function HistoryScreen() {
   );
 
   const filteredEntries = useMemo(() => {
-    const now = new Date();
     const cutoff = dateRange === 'all' ? null : new Date(now.getTime() - Number(dateRange) * 24 * 60 * 60 * 1000);
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -109,7 +109,7 @@ export default function HistoryScreen() {
         (!normalizedQuery || searchable.includes(normalizedQuery))
       );
     });
-  }, [dateRange, entries, query, selectedType]);
+  }, [dateRange, entries, query, selectedType, now]);
 
   const groupedEntries = useMemo(() => {
     const groups = new Map<string, HistoryEntry[]>();
@@ -132,14 +132,16 @@ export default function HistoryScreen() {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       const link = document.createElement('a');
       link.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
-      link.download = 'intellimed-history.csv';
+      link.download = 'medmobi-history.csv';
       link.click();
       setExportMessage('CSV downloaded');
       return;
     }
 
-    await Share.share({ message: csv, title: 'IntelliMed history' });
-    setExportMessage('History ready to share');
+    try {
+      await Share.share({ message: csv, title: 'Medmobi history' });
+      setExportMessage('History ready to share');
+    } catch { setExportMessage('Could not share history. Please try again.'); }
   };
 
   return (
@@ -150,6 +152,7 @@ export default function HistoryScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+      <MedicationSyncNotice />
       <View style={styles.headerRow}>
         <View pointerEvents="none" style={styles.headerPattern}>
           <View style={[styles.patternPill, styles.patternPillOne]} />
@@ -321,14 +324,14 @@ const styles = StyleSheet.create({
   patternPillThree: { backgroundColor: '#D1EAF1', right: 84, top: 66, transform: [{ rotate: '25deg' }] },
   headerCopy: { flex: 1 },
   eyebrow: { color: colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1.6 },
-  title: { color: colors.primary, fontSize: 32, fontWeight: '900', marginTop: 6 },
+  title: { ...typography.heading, color: colors.primary, fontSize: 32, marginTop: 6 },
   subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 20, marginTop: 5 },
   helpButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, borderWidth: 1, height: 36, justifyContent: 'center', marginLeft: 14, width: 36 },
   helpText: { color: colors.primary, fontSize: 18, fontWeight: '900' },
   helpCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginTop: 14, padding: 15 },
   helpTitle: { color: colors.primary, fontSize: 13, fontWeight: '900' },
   helpBody: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 5 },
-  summaryCard: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 20, flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, overflow: 'hidden', padding: 18, position: 'relative' },
+  summaryCard: { flexWrap: 'wrap', gap: 12, alignItems: 'center', backgroundColor: colors.primary, borderRadius: 20, flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, overflow: 'hidden', padding: 18, position: 'relative' },
   summaryPattern: { ...StyleSheet.absoluteFill },
   summaryPill: { borderRadius: 20, height: 17, opacity: 0.18, position: 'absolute', width: 58 },
   summaryPillOne: { backgroundColor: '#FFFFFF', right: 116, top: -5, transform: [{ rotate: '28deg' }] },
@@ -356,7 +359,7 @@ const styles = StyleSheet.create({
   rangeText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   activeRangeText: { color: colors.primary },
   timelineHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 28 },
-  sectionTitle: { color: colors.primary, fontSize: 20, fontWeight: '900' },
+  sectionTitle: { ...typography.heading, color: colors.primary, fontSize: 22 },
   legend: { alignItems: 'flex-end' },
   legendText: { color: colors.textMuted, fontSize: 10, lineHeight: 16 },
   dayGroup: { marginTop: 18 },

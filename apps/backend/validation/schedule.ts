@@ -29,6 +29,10 @@ export function validateScheduleInput(input: Record<string, any>): string[] {
           Number.isInteger(offset) && [0, 1, 2, 5, 10, 15, 30, 60].includes(offset as number)))) {
     errors.push("metadata.notificationOffsets must contain one or more supported minute offsets");
   }
+  if (metadata?.doseAmount != null &&
+      (typeof metadata.doseAmount !== "number" || !Number.isFinite(metadata.doseAmount) || metadata.doseAmount <= 0)) {
+    errors.push("metadata.doseAmount must be a positive number");
+  }
   if (metadata?.notificationSound != null &&
       !["default", "silent"].includes(metadata.notificationSound)) {
     errors.push("metadata.notificationSound must be default or silent");

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "../src/db/prisma";
 import { requireAuth } from ".././middleware/auth";
 import { registrationProfileSchema } from "../validation/profile";
+import { createVendingCode } from "../src/vending/passes";
 
 const router = Router();
 
@@ -61,6 +62,7 @@ router.post("/register", async (req, res) => {
         firstName,
         lastName,
         passwordHash,
+        vendingPass: { create: { code: createVendingCode() } },
         ...(email ? { email } : {}),
         ...(phone ? { phone } : {}),
         ...(profile ? { profile: { create: {

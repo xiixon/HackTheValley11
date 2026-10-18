@@ -112,7 +112,7 @@ export function AuthScreen() {
               <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.brandIcon}>
                 <View style={styles.pill}><View style={styles.pillHalf} /></View>
               </View>
-              <Text style={styles.brandName}>A little care, every day.</Text>
+              <Text style={styles.brandName}>Medmobi</Text>
             </View>
             <View style={styles.heading}>
               <Text accessibilityRole="header" style={styles.title}>

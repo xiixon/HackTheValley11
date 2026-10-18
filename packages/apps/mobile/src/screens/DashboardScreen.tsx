@@ -2,6 +2,7 @@ import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
+import { MedicationSyncNotice } from '../components/medications/MedicationSyncNotice';
 import { MedicationList } from '../components/dashboard/MedicationList';
 import { useMedications } from '../context/MedicationContext';
 import { getMedicationDisplayStatus, Medication } from '../types/medication';
@@ -15,14 +16,14 @@ import { PageBackdrop } from '../components/navigation/PageBackdrop';
 export function DashboardScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-  const { medicationsByDate, cycleMedicationStatus } = useMedications();
+  const { medicationsByDate, cycleMedicationStatus, now, loading } = useMedications();
   const { updateMedication } = useMedications();
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
-  const today = new Date();
+  const today = now;
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const medications = medicationsByDate[todayKey] ?? [];
-  const takenCount = medications.filter((medication) => getMedicationDisplayStatus(medication) === 'taken').length;
-  const missedCount = medications.filter((medication) => getMedicationDisplayStatus(medication) === 'missed').length;
+  const takenCount = medications.filter((medication) => getMedicationDisplayStatus(medication, now) === 'taken').length;
+  const missedCount = medications.filter((medication) => getMedicationDisplayStatus(medication, now) === 'missed').length;
   const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
   return (
@@ -40,7 +41,7 @@ export function DashboardScreen() {
           <View style={styles.progressCopy}>
             <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
             <Text style={styles.progressTitle}>
-              {missedCount > 0
+              {loading ? 'Loading your schedule…' : !medications.length ? 'No doses scheduled' : missedCount > 0
                 ? 'Review missed doses'
                 : takenCount === medications.length
                   ? 'All done for today!'
@@ -73,6 +74,7 @@ export function DashboardScreen() {
             </Text>
           </View>
         )}
+        <MedicationSyncNotice />
         <MedicationList
           medications={medications}
           onCycleMedicationStatus={cycleMedicationStatus}
@@ -84,7 +86,7 @@ export function DashboardScreen() {
           medication={editingMedication}
           onClose={() => setEditingMedication(null)}
           onSubmit={(updated) => {
-            if (editingMedication) updateMedication(editingMedication.id, updated);
+            if (editingMedication) return updateMedication(editingMedication.id, updated);
           }}
           visible={editingMedication !== null}
         />

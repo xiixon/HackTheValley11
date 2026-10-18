@@ -7,7 +7,7 @@ import { sendReminder } from "../services/pushService";
 export function startReminderJob() {
   cron.schedule("* * * * *", async () => {      // every minute
     try {
-      const schedules = await prisma.schedule.findMany({ where: { isActive: true }, include: { medication: true } });
+      const schedules = await prisma.schedule.findMany({ where: { isActive: true }, include: { medication: true, doseLogs: true } });
 
       for (const { schedule, localDate, time, offset } of findDue(schedules)) {
         // Claim this reminder first. The unique rule on
