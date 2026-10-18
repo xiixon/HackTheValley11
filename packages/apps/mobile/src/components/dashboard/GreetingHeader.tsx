@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
 
 interface GreetingHeaderProps {
   name: string;
@@ -37,10 +38,9 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   greeting: {
+    ...typography.heading,
     color: colors.primary,
     fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -1,
     lineHeight: 40,
   },
   date: {

@@ -3,12 +3,20 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+const migrationUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+if (migrationUrl) {
+  const hostname = new URL(migrationUrl).hostname;
+  if (hostname.endsWith('.neon.tech') && hostname.includes('-pooler.')) {
+    throw new Error('Prisma migrations need the direct Neon URL. Set DATABASE_URL_UNPOOLED to the non-pooler connection URL in apps/backend/.env.');
+  }
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL!,
+    url: migrationUrl!,
   },
 });

@@ -1,7 +1,8 @@
 import { createContext, type PropsWithChildren, useContext, useState } from 'react';
 import { apiUrl } from '../lib/api';
+import type { RegistrationProfile } from '../../../../shared/src/types/User';
 
-type Credentials = { email: string; password: string; firstName?: string; lastName?: string };
+type Credentials = { email: string; password: string; firstName?: string; lastName?: string; profile?: RegistrationProfile };
 type Session = {
   token: string;
   user: { id: string; firstName: string; lastName: string; email: string };

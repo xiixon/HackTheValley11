@@ -17,6 +17,15 @@ export type Contact =
 
 export type Sex = "male" | "female" | "other";
 
+export type RegistrationProfile = {
+    weightKg: number;
+    heightCm: number;
+    sex: Sex;
+    birthDate: string;
+    allergies: string[];
+    healthConditions: { name: string; notes?: string }[];
+};
+
 // User data
 export type UserProfile = {
     weightKg: number;

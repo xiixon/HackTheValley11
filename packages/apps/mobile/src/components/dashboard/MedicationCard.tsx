@@ -1,48 +1,82 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 
-import { Medication } from '../../types/medication';
+import { getMedicationDisplayStatus, Medication } from '../../types/medication';
 import { colors } from '../../theme/colors';
 import { MedicationDetailsModal } from '../medications/MedicationDetailsModal';
 
 type MedicationCardProps = {
   medication: Medication;
   onMarkTaken: (id: string) => void;
+  onEditMedication: (medication: Medication) => void;
 };
 
-export function MedicationCard({ medication, onMarkTaken }: MedicationCardProps) {
-  const isTaken = medication.status === 'taken';
+export function MedicationCard({ medication, onMarkTaken, onEditMedication }: MedicationCardProps) {
+  const displayStatus = getMedicationDisplayStatus(medication);
+  const isTaken = displayStatus === 'taken';
+  const isMissed = displayStatus === 'missed';
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
 
   return (
     <View style={styles.card}>
-      <View style={[styles.icon, { backgroundColor: medication.color }]}>
-        <Text style={styles.iconText}>✦</Text>
+      <View style={styles.mainRow}>
+        <View style={[styles.icon, { backgroundColor: medication.color }]}>
+          <Text style={styles.iconText}>✚</Text>
+        </View>
+        <View style={styles.details}>
+          <Text style={styles.name}>{medication.genericName}</Text>
+          <Text style={styles.dosage}>{medication.dosage}</Text>
+          <Text style={styles.time}>{medication.time}</Text>
+        </View>
+        <Pressable
+          accessibilityLabel={
+            isMissed
+              ? `${medication.genericName} was missed; mark it as taken`
+              : `${isTaken ? 'Mark' : 'Take'} ${medication.genericName}`
+          }
+          accessibilityRole="button"
+          accessibilityState={{ checked: isTaken }}
+          disabled={isMissed}
+          onPress={() => onMarkTaken(medication.id)}
+          style={({ pressed }) => [
+            isMissed ? styles.missedButton : isTaken ? styles.takenButton : styles.takeButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          {isTaken && <Text style={styles.takenCheck}>✓</Text>}
+          <Text style={isMissed ? styles.missedText : isTaken ? styles.takenText : styles.takeButtonText}>
+            {isMissed ? 'Missed!' : isTaken ? 'Taken' : 'Upcoming'}
+          </Text>
+        </Pressable>
       </View>
-      <View style={styles.details}>
-        <Text style={styles.name}>{medication.genericName}</Text>
-        <Text style={styles.dosage}>{medication.dosage}</Text>
-        <Text style={styles.time}>{medication.time}</Text>
+      <View style={styles.actionRow}>
+        {isMissed && (
+          <Pressable
+            accessibilityLabel={`Mark missed ${medication.genericName} as taken`}
+            accessibilityRole="button"
+            onPress={() => onMarkTaken(medication.id)}
+            style={({ pressed }) => [styles.markTakenButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.markTakenText}>Mark taken</Text>
+          </Pressable>
+        )}
+        <Pressable
+          accessibilityLabel={`View details for ${medication.genericName}`}
+          accessibilityRole="button"
+          onPress={() => setIsDetailsVisible(true)}
+          style={({ pressed }) => [styles.detailsLink, pressed && styles.pressed]}
+        >
+          <Text style={styles.detailsLinkText}>Details</Text>
+        </Pressable>
       </View>
-      <Pressable
-        accessibilityLabel={`${isTaken ? 'Undo taken status for' : 'Mark'} ${medication.genericName}`}
-        accessibilityRole="button"
-        accessibilityState={{ checked: isTaken }}
-        onPress={() => onMarkTaken(medication.id)}
-        style={({ pressed }) => [
-          isTaken ? styles.takenButton : styles.takeButton,
-          pressed && styles.pressed,
-        ]}
-      >
-        {isTaken && <Text style={styles.takenCheck}>✓</Text>}
-        <Text style={isTaken ? styles.takenText : styles.takeButtonText}>
-          {isTaken ? 'Taken' : 'Upcoming'}
-        </Text>
-      </Pressable>
-      <Pressable accessibilityLabel={`View details for ${medication.genericName}`} accessibilityRole="button" onPress={() => setIsDetailsVisible(true)}>
-        <Text style={styles.detailsLink}>Details</Text>
-      </Pressable>
-      <MedicationDetailsModal medication={isDetailsVisible ? medication : null} onClose={() => setIsDetailsVisible(false)} />
+      <MedicationDetailsModal
+        medication={isDetailsVisible ? medication : null}
+        onClose={() => setIsDetailsVisible(false)}
+        onEdit={(selectedMedication) => {
+          setIsDetailsVisible(false);
+          onEditMedication(selectedMedication);
+        }}
+      />
     </View>
   );
 }
@@ -54,10 +88,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     marginBottom: 12,
     minHeight: 108,
     padding: 16,
+  },
+  mainRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    width: '100%',
   },
   icon: {
     alignItems: 'center',
@@ -125,13 +164,51 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  missedButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  missedText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  markTakenButton: {
+    borderColor: colors.primary,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginRight: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+  },
+  markTakenText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '900',
+  },
   pressed: {
     opacity: 0.75,
   },
+  actionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+    width: '100%',
+  },
   detailsLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+    minWidth: 64,
+  },
+  detailsLinkText: {
     color: colors.primary,
     fontSize: 11,
     fontWeight: '800',
-    marginLeft: 8,
   },
 });

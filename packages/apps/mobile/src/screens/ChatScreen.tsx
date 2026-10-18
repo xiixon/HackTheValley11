@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Platform, Pressable,
   ScrollView, StyleSheet, Text, TextInput, View,
@@ -10,6 +10,8 @@ import { useAuth } from '../auth/AuthContext';
 import { useMedications } from '../context/MedicationContext';
 import { apiUrl } from '../lib/api';
 import { colors } from '../theme/colors';
+import { PillBackground } from '../components/PillBackground';
+import { typography } from '../theme/typography';
 
 export function ChatScreen() {
   const { session } = useAuth();
@@ -89,73 +91,94 @@ export function ChatScreen() {
 
   const canSend = !!draft.trim() && !busy;
   const conversation = (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <View style={styles.heading}>
-          <Text accessibilityRole="header" style={styles.title}>IntelliMed</Text>
-        </View>
-        <Pressable accessibilityRole="button" onPress={newChat} style={styles.newChat}>
-          <Text style={styles.newChatText}>New chat</Text>
-        </Pressable>
-      </View>
-      <View style={styles.warning}>
-        <Text style={styles.warningText}>AI can be wrong. Check the accuracy of its answers before relying on them.</Text>
-      </View>
-      <ScrollView ref={scroll} style={styles.conversation} contentContainerStyle={styles.messages}
-        keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
-        onContentSizeChange={() => {
-          if (scrollAfterMessage.current) { scrollAfterMessage.current = false; scroll.current?.scrollToEnd({ animated: true }); }
-        }}>
-        {messages.length === 0 && !busy && (
-          <View style={styles.empty}>
-            <Text style={styles.sparkle}>✦</Text>
-            <Text style={styles.emptyTitle}>What’s on your mind?</Text>
-            <Text style={styles.emptyText}>Ask about medications, your routine, or questions to bring to your pharmacist.</Text>
-            {['Help me understand my medication routine', 'What should I ask my pharmacist?'].map((suggestion) => (
-              <Pressable key={suggestion} accessibilityRole="button" onPress={() => setDraft(suggestion)} style={styles.suggestion}>
-                <Text style={styles.suggestionText}>{suggestion}</Text>
-                <Text style={styles.suggestionArrow}>↗</Text>
-              </Pressable>
-            ))}
+    <PillBackground>
+      <ChatKeyboardAvoidingView>
+        <View style={styles.header}>
+          <View style={styles.heading}>
+            <Text accessibilityRole="header" style={styles.title}>IntelliMed</Text>
           </View>
-        )}
-        {messages.map((message, index) => (
-          <View key={index} style={[styles.message, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
-            {message.role === 'model' && <Text style={styles.aiLabel}>✦ IntelliMed</Text>}
-            <Text selectable style={[styles.messageText, message.role === 'user' && styles.userText]}>{message.text}</Text>
-          </View>
-        ))}
-        {busy && <View accessibilityLiveRegion="polite" style={[styles.message, styles.aiMessage, styles.typing]}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.subtitle}>Thinking…</Text>
-        </View>}
-      </ScrollView>
-      <View style={styles.composer}>
-        {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
-        <View style={styles.inputRow}>
-          <TextInput accessibilityLabel="Message to IntelliMed" multiline maxLength={1500} editable={!busy}
-            value={draft} onChangeText={(value) => { setDraft(value); setError(''); }}
-            placeholder="Message IntelliMed…" placeholderTextColor={colors.textMuted}
-            style={styles.input} textAlignVertical="top" />
-          <Pressable accessibilityRole="button" accessibilityLabel="Send message"
-            accessibilityState={{ disabled: !canSend, busy }} disabled={!canSend} onPress={() => void send()}
-            style={({ pressed }) => [styles.sendButton, (!canSend || pressed) && styles.disabled]}>
-            <Text style={styles.sendArrow}>↑</Text>
+          <Pressable accessibilityRole="button" onPress={newChat} style={styles.newChat}>
+            <Text style={styles.newChatText}>New chat</Text>
           </Pressable>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+        <View style={styles.warning}>
+          <Text style={styles.warningText}>AI can be wrong. Check the accuracy of its answers before relying on them.</Text>
+        </View>
+        <ScrollView ref={scroll} style={styles.conversation} contentContainerStyle={styles.messages}
+          keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
+          onLayout={() => { if (messages.length > 0) scroll.current?.scrollToEnd({ animated: false }); }}
+          onContentSizeChange={() => {
+            if (scrollAfterMessage.current) { scrollAfterMessage.current = false; scroll.current?.scrollToEnd({ animated: true }); }
+          }}>
+          {messages.length === 0 && !busy && (
+            <View style={styles.empty}>
+              <Text style={styles.sparkle}>✦</Text>
+              <Text style={styles.emptyTitle}>What’s on your mind?</Text>
+              <Text style={styles.emptyText}>Ask about medications, your routine, or questions to bring to your pharmacist.</Text>
+              {['Help me understand my medication routine', 'What should I ask my pharmacist?'].map((suggestion) => (
+                <Pressable key={suggestion} accessibilityRole="button" onPress={() => setDraft(suggestion)} style={styles.suggestion}>
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                  <Text style={styles.suggestionArrow}>↗</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          {messages.map((message, index) => (
+            <View key={index} style={[styles.message, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
+              {message.role === 'model' && <Text style={styles.aiLabel}>✦ IntelliMed</Text>}
+              <Text selectable style={[styles.messageText, message.role === 'user' && styles.userText]}>{message.text}</Text>
+            </View>
+          ))}
+          {busy && <View accessibilityLiveRegion="polite" style={[styles.message, styles.aiMessage, styles.typing]}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.subtitle}>Thinking…</Text>
+          </View>}
+        </ScrollView>
+        <View style={styles.composer}>
+          {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
+          <View style={styles.inputRow}>
+            <TextInput accessibilityLabel="Message to IntelliMed" multiline maxLength={1500} editable={!busy}
+              value={draft} onChangeText={(value) => { setDraft(value); setError(''); }}
+              placeholder="Message IntelliMed…" placeholderTextColor={colors.textMuted}
+              style={styles.input} textAlignVertical="top" />
+            <Pressable accessibilityRole="button" accessibilityLabel="Send message"
+              accessibilityState={{ disabled: !canSend, busy }} disabled={!canSend} onPress={() => void send()}
+              style={({ pressed }) => [styles.sendButton, (!canSend || pressed) && styles.disabled]}>
+              <Text style={styles.sendArrow}>↑</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ChatKeyboardAvoidingView>
+    </PillBackground>
   );
   return Platform.OS === 'web' ? conversation : (
     <SafeAreaView edges={{ bottom: true }} style={styles.screen}>{conversation}</SafeAreaView>
   );
 }
 
+function ChatKeyboardAvoidingView({ children }: PropsWithChildren) {
+  const container = useRef<View>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  return (
+    <View ref={container} collapsable={false} style={styles.conversationShell}
+      onLayout={() => container.current?.measureInWindow((_x, y) => setKeyboardOffset(y))}>
+      <KeyboardAvoidingView style={styles.conversationShell}
+        enabled={Platform.OS !== 'web'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardOffset}>
+        {children}
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  conversationShell: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   heading: { flex: 1, gap: 4 },
-  title: { color: colors.text, fontSize: 30, fontWeight: '700', letterSpacing: -0.5 },
+  title: { ...typography.heading, color: colors.text, fontSize: 30 },
   subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
   newChat: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
   newChatText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
@@ -165,7 +188,7 @@ const styles = StyleSheet.create({
   messages: { flexGrow: 1, padding: 20, gap: 16 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 14, paddingVertical: 24 },
   sparkle: { color: colors.primary, fontSize: 38 },
-  emptyTitle: { color: colors.text, fontSize: 23, fontWeight: '700' },
+  emptyTitle: { ...typography.heading, color: colors.text, fontSize: 23 },
   emptyText: { color: colors.textMuted, fontSize: 15, lineHeight: 23, textAlign: 'center', maxWidth: 320, marginBottom: 10 },
   suggestion: { width: '100%', maxWidth: 380, flexDirection: 'row', gap: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 16, padding: 16 },
   suggestionText: { flex: 1, color: colors.primary, fontSize: 14, lineHeight: 21 },

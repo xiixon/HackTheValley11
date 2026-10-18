@@ -31,6 +31,7 @@ router.post("/", async (req, res) => {
       daysOfWeek: body.daysOfWeek,
       timezone: body.timezone,
     },
+    include: { medication: true },
   });
   res.status(201).json(created);
 });
@@ -40,7 +41,7 @@ router.get("/", async (req, res) => {
     const userId = req.userId;
   if (!userId) return res.status(401).json({ errors: ["not authenticated"] });
 
-  res.json(await prisma.schedule.findMany({ where: { userId } }));
+  res.json(await prisma.schedule.findMany({ where: { userId }, include: { medication: true } }));
 });
 
 // READ (one)
@@ -48,7 +49,7 @@ router.get("/:id", async (req, res) => {
     const userId = req.userId;
   if (!userId) return res.status(401).json({ errors: ["not authenticated"] });
 
-  const schedule = await prisma.schedule.findFirst({ where: { id: req.params.id, userId } });
+  const schedule = await prisma.schedule.findFirst({ where: { id: req.params.id, userId }, include: { medication: true } });
   if (!schedule) return res.sendStatus(404);
   res.json(schedule);
 });
@@ -78,7 +79,7 @@ router.patch("/:id", async (req, res) => {
   if (typeof merged.isActive !== "boolean") errors.push("isActive must be true or false");
   if (errors.length) return res.status(400).json({ errors });
 
-  res.json(await prisma.schedule.update({ where: { id: existing.id }, data: merged }));
+  res.json(await prisma.schedule.update({ where: { id: existing.id }, data: merged, include: { medication: true }}));
 });
 
 // DELETE

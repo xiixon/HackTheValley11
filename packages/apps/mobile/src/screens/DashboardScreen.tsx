@@ -4,57 +4,96 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GreetingHeader } from '../components/dashboard/GreetingHeader';
 import { MedicationList } from '../components/dashboard/MedicationList';
 import { useMedications } from '../context/MedicationContext';
+import { getMedicationDisplayStatus, Medication } from '../types/medication';
+import { AddMedicationModal } from '../components/medications/AddMedicationModal';
+import { useState } from 'react';
 import { colors } from '../theme/colors';
+import { typography } from "../theme/typography";
+import { PillBackground } from "../components/PillBackground";
 import { useAuth } from '../auth/AuthContext';
 
 export function DashboardScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-  const { medicationsByDate, toggleMedicationTaken } = useMedications();
+  const { medicationsByDate, cycleMedicationStatus } = useMedications();
+  const { updateMedication } = useMedications();
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const medications = medicationsByDate[todayKey] ?? [];
-  const takenCount = medications.filter(({ status }) => status === 'taken').length;
+  const takenCount = medications.filter((medication) => getMedicationDisplayStatus(medication) === 'taken').length;
+  const missedCount = medications.filter((medication) => getMedicationDisplayStatus(medication) === 'missed').length;
   const completionPercentage = medications.length === 0 ? 0 : Math.round((takenCount / medications.length) * 100);
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.content,
-        Platform.OS === 'android' && { paddingTop: styles.content.paddingTop + insets.top },
-      ]}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-    >
-      <GreetingHeader name={session?.user.firstName ?? ''} subtitle="You're doing amazing!" />
-      <View style={styles.progressCard}>
-        <View style={styles.progressCopy}>
-          <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
-          <Text style={styles.progressTitle}>
-            {takenCount === medications.length ? 'All done for today!' : "You're doing great"}
-          </Text>
-          <Text style={styles.progressSubtitle}>
-            {takenCount} of {medications.length} doses logged
-          </Text>
-          <View
-            accessibilityLabel={`${completionPercentage}% of today's medications completed`}
-            accessibilityRole="progressbar"
-            style={styles.progressTrack}
-          >
-            <View style={[styles.progressFill, { width: `${completionPercentage}%` }]} />
+    <PillBackground>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          Platform.OS === 'android' && { paddingTop: styles.content.paddingTop + insets.top },
+        ]}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
+        <GreetingHeader name={session?.user.firstName ?? ''} subtitle="You're doing amazing!" />
+        <View style={styles.progressCard}>
+          <View style={styles.progressCopy}>
+            <Text style={styles.progressEyebrow}>TODAY&apos;S PROGRESS</Text>
+            <Text style={styles.progressTitle}>
+              {missedCount > 0
+                ? 'Review missed doses'
+                : takenCount === medications.length
+                  ? 'All done for today!'
+                  : "You're doing great"}
+            </Text>
+            <Text style={styles.progressSubtitle}>
+              {takenCount} of {medications.length} doses taken
+              {missedCount > 0 ? ` · ${missedCount} missed` : ''}
+            </Text>
+            <View
+              accessibilityLabel={`${completionPercentage}% of today's medications completed`}
+              accessibilityRole="progressbar"
+              style={styles.progressTrack}
+            >
+              <View style={[styles.progressFill, { width: `${completionPercentage}%` }]} />
+            </View>
+          </View>
+          <View style={styles.progressCircle}>
+            <Text style={styles.progressNumber}>{completionPercentage}%</Text>
+            <Text style={styles.progressCircleLabel}>complete</Text>
           </View>
         </View>
-        <View style={styles.progressCircle}>
-          <Text style={styles.progressNumber}>{completionPercentage}%</Text>
-          <Text style={styles.progressCircleLabel}>complete</Text>
+        {missedCount > 0 && (
+          <View style={styles.missedBanner} accessibilityRole="alert">
+            <Text style={styles.missedBannerTitle}>
+              {missedCount} missed {missedCount === 1 ? 'dose' : 'doses'}
+            </Text>
+            <Text style={styles.missedBannerText}>
+              Review your schedule and follow your care plan before making changes.
+            </Text>
+          </View>
+        )}
+        <MedicationList
+          medications={medications}
+          onCycleMedicationStatus={cycleMedicationStatus}
+          onEditMedication={setEditingMedication}
+        />
+        <AddMedicationModal
+          key={editingMedication?.id ?? "new-medication"}
+          date={today}
+          medication={editingMedication}
+          onClose={() => setEditingMedication(null)}
+          onSubmit={(updated) => {
+            if (editingMedication) updateMedication(editingMedication.id, updated);
+          }}
+          visible={editingMedication !== null}
+        />
+        <View style={styles.note}>
+          <Text style={styles.noteIcon}>✚</Text>
+          <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
         </View>
-      </View>
-      <MedicationList medications={medications} onMarkTaken={toggleMedicationTaken} />
-      <View style={styles.note}>
-        <Text style={styles.noteIcon}>✦</Text>
-        <Text style={styles.noteText}>Small steps add up. You&apos;ve got this.</Text>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </PillBackground>
   );
 }
 
@@ -84,9 +123,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   progressTitle: {
+    ...typography.heading,
     color: colors.surface,
     fontSize: 19,
-    fontWeight: '700',
     marginTop: 7,
   },
   progressSubtitle: {
@@ -117,9 +156,9 @@ const styles = StyleSheet.create({
     width: 72,
   },
   progressNumber: {
+    ...typography.heading,
     color: colors.primary,
     fontSize: 18,
-    fontWeight: '800',
   },
   progressCircleLabel: {
     color: colors.textMuted,
@@ -142,5 +181,23 @@ const styles = StyleSheet.create({
   noteText: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+  missedBanner: {
+    backgroundColor: colors.accent,
+    borderRadius: 18,
+    marginBottom: 18,
+    padding: 16,
+  },
+  missedBannerTitle: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  missedBannerText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 18,
+    marginTop: 4,
   },
 });
