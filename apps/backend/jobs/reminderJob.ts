@@ -1,8 +1,9 @@
 import cron from "node-cron";
 import { prisma } from "../src/db/prisma";
 import { findDue } from "../services/reminderService";
+import { sendReminder } from "../services/pushService";
 
-// A cron job that runs every minute in background to check for reminders that are due and log them for notificatiton delivery
+// A cron job that runs every minute in background to check for reminders that are due and record them so they are only sent once, and send push notifications to the user's devices
 export function startReminderJob() {
   cron.schedule("* * * * *", async () => {      // every minute
     try {
@@ -22,7 +23,12 @@ export function startReminderJob() {
         }
 
         console.log(`Reminder due: schedule ${schedule.id}, user ${schedule.userId}, ${time} (${localDate})`);
-        // push sending gets added here in Step 6
+        
+        try {
+          await sendReminder(schedule.userId, schedule.id, schedule.medicationId);
+        } catch (err) {
+          console.error("could not send reminder", schedule.id, err);
+        }
       }
     } catch (err) {
       console.error("reminder job failed", err);
