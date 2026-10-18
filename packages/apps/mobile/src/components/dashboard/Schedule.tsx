@@ -581,6 +581,8 @@ const styles = StyleSheet.create({
     color: "#DCE5FF",
     fontSize: 14,
     marginTop: 14,
+    fontFamily: "Roboto",
+    letterSpacing: 0.2,
   },
   heroBadge: {
     alignItems: "center",
