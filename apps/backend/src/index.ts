@@ -1,15 +1,12 @@
 import express from "express";
-<<<<<<< HEAD
 import authRoutes from "../routes/auth"
+import profileRoutes from "../routes/profile"
 import schedulesRouter from "../routes/schedules"
 import { requireAuth } from "../middleware/auth"
 import { startReminderJob } from "../jobs/reminderJob"
 import pushTokensRouter from "../routes/pushTokens"
-=======
-import authRoutes from "../routes/auth";
-import schedulesRouter from "../routes/schedules";
-import { requireAuth } from "../middleware/auth.js";
->>>>>>> a45356f8e0974d1900c5d99f88eeaad803b2a86b
+import { createChatRouter } from "../routes/chat";
+import { getChatContext } from "./services/chatContext";
 
 const app = express();
 
@@ -28,12 +25,11 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 app.use("/auth", authRoutes);
-<<<<<<< HEAD
 app.use("/schedules", schedulesRouter);
 app.use("/push-tokens", requireAuth, pushTokensRouter);
-=======
+app.use("/profile", profileRoutes);
 app.use("/schedules", requireAuth, schedulesRouter);
->>>>>>> a45356f8e0974d1900c5d99f88eeaad803b2a86b
+app.use("/chat", requireAuth, createChatRouter({ getContext: getChatContext }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

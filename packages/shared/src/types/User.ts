@@ -15,10 +15,14 @@ export type Contact =
   | { email: string; phone?: string }
   | { phone: string; email?: string };
 
+export type Sex = "male" | "female" | "other";
+
 // User data
 export type UserProfile = {
     weightKg: number;
     heightCm: number;
+    sex: Sex;
+    birthDate: string; // "YYYY-MM-DD"
     conditions: HealthCondition[];
     allergies: string[];
 }

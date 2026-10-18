@@ -2,13 +2,15 @@ import { Schedule } from '../components/dashboard/Schedule';
 import { useMedications } from '../context/MedicationContext';
 
 export default function ScheduleScreen() {
-  const { addMedication, medicationsByDate, toggleMedicationTaken } = useMedications();
+  const { addMedication, medicationsByDate, cycleMedicationStatus, updateMedication, deleteMedication } = useMedications();
 
   return (
     <Schedule
       medicationsByDate={medicationsByDate}
-      onToggleMedication={toggleMedicationTaken}
+      onCycleMedicationStatus={cycleMedicationStatus}
       onAddMedication={addMedication}
+      onUpdateMedication={updateMedication}
+      onDeleteMedication={deleteMedication}
     />
   );
 }

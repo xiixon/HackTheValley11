@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/log-box": "~57.0.4",
     "@expo/metro-runtime": "~57.0.17",
+    "@react-native-community/datetimepicker": "9.1.0",
     "expo": "~57.0.30",
     "expo-constants": "~57.0.22",
     "expo-linking": "~57.0.13",
