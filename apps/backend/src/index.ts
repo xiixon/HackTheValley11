@@ -15,7 +15,7 @@ app.use((req, res, next) => {
   if (req.headers.origin === (process.env.APP_ORIGIN ?? "http://localhost:8081")) {
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
     res.vary("Origin");
   }
   if (req.method === "OPTIONS") {

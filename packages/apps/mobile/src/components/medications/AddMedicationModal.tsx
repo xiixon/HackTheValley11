@@ -50,7 +50,7 @@ const initialValues: MedicationFormValues = {
 const frequencyOptions = ["Once", "Daily", "Selected days", "Every N days", "Weekly", "Monthly", "As needed", "Once daily"];
 const weekdayOptions = [["S", 0], ["M", 1], ["T", 2], ["W", 3], ["T", 4], ["F", 5], ["S", 6]] as const;
 
-type PickerTarget = "startDate" | "endDate" | "reminder" | null;
+type PickerTarget = "startDate" | "endDate" | "primaryReminder" | "reminder" | null;
 
 function formatDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -154,14 +154,22 @@ export function AddMedicationModal({
     setPickerTarget(target);
   };
 
-  const openTimePicker = () => {
+  const openTimePicker = (target: "primaryReminder" | "reminder" = "reminder") => {
     setPickerDate(new Date());
-    setPickerTarget("reminder");
+    setPickerTarget(target);
   };
 
   const handlePickerChange = (_event: unknown, selected?: Date) => {
     if (Platform.OS !== "ios") setPickerTarget(null);
     if (!selected || !pickerTarget) return;
+
+    if (pickerTarget === "primaryReminder") {
+      update("reminderTimes", [
+        formatTime(selected),
+        ...values.reminderTimes.slice(1),
+      ]);
+      return;
+    }
 
     if (pickerTarget === "reminder") {
       setNewReminderTime(formatTime(selected));
@@ -224,14 +232,33 @@ export function AddMedicationModal({
             )}
             <View style={styles.scheduleGroup}>
               <Text style={styles.groupLabel}>Reminder times</Text>
-              {values.reminderTimes.map((time, index) => (
+              <SelectField
+                label="Primary reminder time"
+                value={values.reminderTimes[0] ?? values.time}
+                onPress={() => openTimePicker("primaryReminder")}
+              />
+              {values.reminderTimes.slice(1).map((time, index) => (
                 <View key={`${time}-${index}`} style={styles.timeRow}>
-                  <Field label={`Time ${index + 1}`} value={time} onChangeText={(value) => update("reminderTimes", values.reminderTimes.map((item, itemIndex) => itemIndex === index ? value : item))} placeholder="e.g. 8:00 AM" />
-                  {values.reminderTimes.length > 1 && (
-                    <Clickable accessibilityLabel={`Remove reminder time ${index + 1}`} accessibilityRole="button" onPress={() => update("reminderTimes", values.reminderTimes.filter((_, itemIndex) => itemIndex !== index))} style={styles.removeTime}>
-                      <Text style={styles.removeTimeText}>−</Text>
-                    </Clickable>
-                  )}
+                  <Field
+                    label="Additional reminder time"
+                    value={time}
+                    onChangeText={(value) =>
+                      update("reminderTimes", values.reminderTimes.map((item, itemIndex) =>
+                        itemIndex === index + 1 ? value : item,
+                      ))
+                    }
+                    placeholder="e.g. 8:00 AM"
+                  />
+                  <Clickable
+                    accessibilityLabel={`Remove additional reminder time ${index + 1}`}
+                    accessibilityRole="button"
+                    onPress={() =>
+                      update("reminderTimes", values.reminderTimes.filter((_, itemIndex) => itemIndex !== index + 1))
+                    }
+                    style={styles.removeTime}
+                  >
+                    <Text style={styles.removeTimeText}>−</Text>
+                  </Clickable>
                 </View>
               ))}
               <View style={styles.addTimeRow}>
@@ -247,30 +274,21 @@ export function AddMedicationModal({
             {isRecurring && !endDateValid && values.endDate.length > 0 && (
               <Text style={styles.validationText}>End date must be on or after the start date.</Text>
             )}
-            <View style={styles.row}>
-              <View style={styles.half}>
-                <Text style={styles.fieldLabel}>Frequency</Text>
-                <Clickable accessibilityRole="button" accessibilityLabel="Choose medication frequency" onPress={() => setIsFrequencyOpen((open) => !open)} style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}>
-                  <Text style={styles.selectText}>{values.Frequency}</Text>
-                  <Text style={styles.selectChevron}>{isFrequencyOpen ? "▲" : "▼"}</Text>
-                </Clickable>
-                {isFrequencyOpen && (
-                  <View style={styles.options}>
-                    {frequencyOptions.map((option) => (
-                      <Clickable key={option} onPress={() => { update("Frequency", option); setIsFrequencyOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
-                        <Text style={styles.optionText}>{option}</Text>
-                      </Clickable>
-                    ))}
-                  </View>
-                )}
-              </View>
-              <View style={styles.half}>
-                <SelectField
-                  label="Primary reminder time"
-                  value={values.reminderTimes[0] ?? values.time}
-                  onPress={openTimePicker}
-                />
-              </View>
+            <View style={styles.scheduleGroup}>
+              <Text style={styles.fieldLabel}>Frequency</Text>
+              <Clickable accessibilityRole="button" accessibilityLabel="Choose medication frequency" onPress={() => setIsFrequencyOpen((open) => !open)} style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}>
+                <Text style={styles.selectText}>{values.Frequency}</Text>
+                <Text style={styles.selectChevron}>{isFrequencyOpen ? "▲" : "▼"}</Text>
+              </Clickable>
+              {isFrequencyOpen && (
+                <View style={styles.options}>
+                  {frequencyOptions.map((option) => (
+                    <Clickable key={option} onPress={() => { update("Frequency", option); setIsFrequencyOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+                      <Text style={styles.optionText}>{option}</Text>
+                    </Clickable>
+                  ))}
+                </View>
+              )}
             </View>
             <View style={styles.row}>
               <View style={styles.half}>
@@ -294,7 +312,7 @@ export function AddMedicationModal({
       {pickerTarget && (
         <DateTimePicker
           value={pickerDate}
-          mode={pickerTarget === "reminder" ? "time" : "date"}
+          mode={pickerTarget === "reminder" || pickerTarget === "primaryReminder" ? "time" : "date"}
           display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={handlePickerChange}
         />
